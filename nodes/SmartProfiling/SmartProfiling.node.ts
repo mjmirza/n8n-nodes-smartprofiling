@@ -266,6 +266,10 @@ export class SmartProfiling implements INodeType {
 							await sleep(adjustedDelay);
 						}
 
+						// AI operations (summarize, chat, speakers, chapters) need longer timeout
+						const isAiOperation = ['summarize', 'chat', 'speakers', 'chapters'].includes(resource);
+						const timeout = isAiOperation ? 120000 : 30000; // 2 min for AI, 30s for others
+
 						const requestOptions: {
 							method: IHttpRequestMethods;
 							url: string;
@@ -273,6 +277,7 @@ export class SmartProfiling implements INodeType {
 							qs?: Record<string, string | number | undefined>;
 							body?: Record<string, unknown>;
 							json: boolean;
+							timeout: number;
 						} = {
 							method,
 							url: `${baseUrl}${endpoint}`,
@@ -282,6 +287,7 @@ export class SmartProfiling implements INodeType {
 								Authorization: `Bearer ${credentials.apiKey}`,
 							},
 							json: true,
+							timeout,
 						};
 
 						if (method === 'GET' && Object.keys(qs).length > 0) {
