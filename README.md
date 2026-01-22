@@ -19,11 +19,11 @@
 
 ### Step 2: Get Your API Key
 
-1. Go to [yttapi.com/signup](https://yttapi.com/signup)
+1. Go to [smartprofiling.com/signup](https://smartprofiling.com/signup)
 2. Create a free account
 3. Go to **Dashboard** → **API Keys**
 4. Click **Create API Key**
-5. Copy your key (starts with `ytt_`)
+5. Copy your key (starts with `sp_`)
 
 ### Step 3: Add Credentials in n8n
 
@@ -241,15 +241,15 @@ Google Sheets / Airtable / Database
 ### "Node not appearing in search"
 
 1. Go to **Settings** → **Community Nodes**
-2. Check if `n8n-nodes-smartprofiling` shows version `0.1.6`
+2. Check if `n8n-nodes-smartprofiling` shows version `0.1.7`
 3. If not, click **Update** or uninstall/reinstall
 4. Hard refresh browser: `Ctrl+Shift+R` (Windows) or `Cmd+Shift+R` (Mac)
 
 ### "Invalid API Key"
 
-1. Make sure your key starts with `ytt_`
+1. Make sure your key starts with `sp_`
 2. Check for extra spaces when copying
-3. Verify key is active at [yttapi.com/dashboard](https://yttapi.com/dashboard)
+3. Verify key is active at [smartprofiling.com/dashboard](https://smartprofiling.com/dashboard)
 
 ### "Video not found"
 
@@ -259,7 +259,7 @@ Google Sheets / Airtable / Database
 
 ### "Rate limit exceeded"
 
-1. Check your usage at [yttapi.com/dashboard](https://yttapi.com/dashboard)
+1. Check your usage at [smartprofiling.com/dashboard](https://smartprofiling.com/dashboard)
 2. Upgrade your plan if needed
 3. Add delays between requests in bulk operations
 
@@ -273,14 +273,14 @@ Google Sheets / Airtable / Database
 | Pro | 10,000 | Regular workflows |
 | Business | 100,000 | High-volume automation |
 
-Get your API key at [yttapi.com](https://yttapi.com)
+Get your API key at [smartprofiling.com](https://smartprofiling.com)
 
 ---
 
 ## Support
 
-- **Documentation:** [yttapi.com/api-docs](https://yttapi.com/api-docs)
-- **Email:** support@yttapi.com
+- **Documentation:** [smartprofiling.com/api-docs](https://smartprofiling.com/api-docs)
+- **Email:** support@smartprofiling.com
 
 ---
 

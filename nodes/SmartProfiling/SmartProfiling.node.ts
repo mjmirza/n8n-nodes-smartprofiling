@@ -150,7 +150,7 @@ export class SmartProfiling implements INodeType {
 
 		const resource = this.getNodeParameter('resource', 0) as string;
 		const credentials = await this.getCredentials('smartProfilingApi');
-		const baseUrl = (credentials.baseUrl as string) || 'https://yttapi.com';
+		const baseUrl = (credentials.baseUrl as string) || 'https://smartprofiling.com';
 
 		// Get retry options
 		const retryOptions = this.getNodeParameter('retryOptions', 0, {}) as {

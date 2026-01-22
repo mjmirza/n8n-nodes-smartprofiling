@@ -12,7 +12,7 @@ export class SmartProfilingApi implements ICredentialType {
 
 	icon = 'file:smartprofiling.svg' as const;
 
-	documentationUrl = 'https://yttapi.com/api-docs';
+	documentationUrl = 'https://smartprofiling.com/api-docs';
 
 	properties: INodeProperties[] = [
 		{
@@ -21,18 +21,18 @@ export class SmartProfilingApi implements ICredentialType {
 			type: 'string',
 			typeOptions: { password: true },
 			default: '',
-			placeholder: 'ytt_xxxxxxxxxxxxxxxx',
-			description: 'Your API key (starts with ytt_). Get one at https://yttapi.com/dashboard',
+			placeholder: 'sp_xxxxxxxxxxxxxxxx',
+			description: 'Your API key (starts with sp_). Get one at https://smartprofiling.com/dashboard',
 		},
 		{
 			displayName: 'Base URL (Domain Only)',
 			name: 'baseUrl',
 			type: 'string',
-			default: 'https://yttapi.com',
-			placeholder: 'https://yttapi.com',
+			default: 'https://smartprofiling.com',
+			placeholder: 'https://smartprofiling.com',
 			hint: 'Enter only the domain. The /api/v1 path is added automatically.',
 			description:
-				'⚠️ IMPORTANT: Enter ONLY the domain (https://yttapi.com). Do NOT add /api/v1 - it will be added automatically and cause errors if included.',
+				'⚠️ IMPORTANT: Enter ONLY the domain (https://smartprofiling.com). Do NOT add /api/v1 - it will be added automatically and cause errors if included.',
 		},
 	];
 
