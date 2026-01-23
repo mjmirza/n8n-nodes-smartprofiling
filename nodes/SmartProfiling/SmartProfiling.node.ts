@@ -229,21 +229,47 @@ export class SmartProfiling implements INodeType {
 						videoId: this.getNodeParameter('videoId', itemIndex) as string,
 					};
 				} else if (resource === 'channel') {
-					endpoint = '/api/v1/channels';
-					method = 'GET';
-					let contentType = 'videos';
-					if (operation === 'getShorts') contentType = 'shorts';
-					if (operation === 'getPlaylists') contentType = 'playlists';
-					qs = {
-						id: this.getNodeParameter('channelId', itemIndex) as string,
-						content: contentType,
-					};
-					// Add continuation token if present
-					const additionalOptions = this.getNodeParameter('additionalOptions', itemIndex, {}) as {
-						continuationToken?: string;
-					};
-					if (additionalOptions.continuationToken) {
-						qs.continuationToken = additionalOptions.continuationToken;
+					const channelId = this.getNodeParameter('channelId', itemIndex) as string;
+
+					if (operation === 'getStats') {
+						// Channel Statistics endpoint
+						endpoint = `/api/v1/channels/${encodeURIComponent(channelId)}/stats`;
+						method = 'GET';
+						const statsOptions = this.getNodeParameter('statsOptions', itemIndex, {}) as {
+							refresh?: boolean;
+							insights?: boolean;
+						};
+						qs = {};
+						if (statsOptions.refresh) {
+							qs.refresh = 'true';
+						}
+						if (statsOptions.insights) {
+							qs.insights = 'true';
+						}
+					} else if (operation === 'getGrowth') {
+						// Channel Growth endpoint
+						endpoint = `/api/v1/channels/${encodeURIComponent(channelId)}/growth`;
+						method = 'GET';
+						const period = this.getNodeParameter('period', itemIndex, '30d') as string;
+						qs = { period };
+					} else {
+						// Original channel content endpoints (videos, shorts, playlists)
+						endpoint = '/api/v1/channels';
+						method = 'GET';
+						let contentType = 'videos';
+						if (operation === 'getShorts') contentType = 'shorts';
+						if (operation === 'getPlaylists') contentType = 'playlists';
+						qs = {
+							id: channelId,
+							content: contentType,
+						};
+						// Add continuation token if present
+						const additionalOptions = this.getNodeParameter('additionalOptions', itemIndex, {}) as {
+							continuationToken?: string;
+						};
+						if (additionalOptions.continuationToken) {
+							qs.continuationToken = additionalOptions.continuationToken;
+						}
 					}
 				} else if (resource === 'playlist') {
 					endpoint = '/api/v1/playlists';

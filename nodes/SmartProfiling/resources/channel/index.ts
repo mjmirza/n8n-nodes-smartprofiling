@@ -66,6 +66,18 @@ export const channelDescription: INodeProperties[] = [
 					},
 				},
 			},
+			{
+				name: 'Get Stats',
+				value: 'getStats',
+				action: 'Get channel statistics',
+				description: 'Get comprehensive channel statistics including subscribers, views, and videos',
+			},
+			{
+				name: 'Get Growth',
+				value: 'getGrowth',
+				action: 'Get channel growth data',
+				description: 'Get historical growth data for subscribers, views, and videos over time',
+			},
 		],
 		default: 'getVideos',
 	},
@@ -75,6 +87,72 @@ export const channelDescription: INodeProperties[] = [
 			show: showOnlyForChannel,
 		},
 	},
+	// Stats-specific options
+	{
+		displayName: 'Options',
+		name: 'statsOptions',
+		type: 'collection',
+		placeholder: 'Add Option',
+		default: {},
+		displayOptions: {
+			show: {
+				resource: ['channel'],
+				operation: ['getStats'],
+			},
+		},
+		options: [
+			{
+				displayName: 'Force Refresh',
+				name: 'refresh',
+				type: 'boolean',
+				default: false,
+				description: 'Whether to bypass cache and fetch fresh data from YouTube',
+			},
+			{
+				displayName: 'Include AI Insights',
+				name: 'insights',
+				type: 'boolean',
+				default: false,
+				description: 'Whether to include AI-powered growth insights and recommendations',
+			},
+		],
+	},
+	// Growth-specific options
+	{
+		displayName: 'Time Period',
+		name: 'period',
+		type: 'options',
+		displayOptions: {
+			show: {
+				resource: ['channel'],
+				operation: ['getGrowth'],
+			},
+		},
+		options: [
+			{
+				name: '7 Days',
+				value: '7d',
+				description: 'Growth data for the last 7 days',
+			},
+			{
+				name: '30 Days',
+				value: '30d',
+				description: 'Growth data for the last 30 days',
+			},
+			{
+				name: '90 Days',
+				value: '90d',
+				description: 'Growth data for the last 90 days',
+			},
+			{
+				name: '365 Days',
+				value: '365d',
+				description: 'Growth data for the last year',
+			},
+		],
+		default: '30d',
+		description: 'Time period for growth data',
+	},
 	{
 		displayName: 'Additional Options',
 		name: 'additionalOptions',
@@ -82,7 +160,10 @@ export const channelDescription: INodeProperties[] = [
 		placeholder: 'Add Option',
 		default: {},
 		displayOptions: {
-			show: showOnlyForChannel,
+			show: {
+				resource: ['channel'],
+				operation: ['getVideos', 'getShorts', 'getPlaylists'],
+			},
 		},
 		options: [
 			{

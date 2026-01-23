@@ -46,6 +46,8 @@
 | **Chapters** | Auto-generate timestamps | YouTube descriptions |
 | **Speakers** | Identify and label speakers | Interview analysis, podcasts |
 | **Channel** | Get all videos from a channel | Bulk processing, monitoring |
+| **Channel Stats** | Get subscriber/view/video counts | Creator analytics |
+| **Channel Growth** | Get historical growth data | Trend analysis |
 | **Playlist** | Get videos from a playlist | Course processing, archives |
 
 ---
@@ -133,6 +135,71 @@
 
 ---
 
+### Example 5: Get Channel Statistics
+
+**Goal:** Get comprehensive channel statistics
+
+1. Add a **Smart Profiling** node
+2. Set **Resource** → `Channel`
+3. Set **Operation** → `Get Stats`
+4. Enter the **Channel ID or Handle**: `@MrBeast`
+5. Optionally enable **Include AI Insights** for growth recommendations
+
+**Output:**
+```json
+{
+  "success": true,
+  "data": {
+    "channelId": "UCX6OQ3DkcsbYNE6H8uQQuVA",
+    "handle": "@MrBeast",
+    "name": "MrBeast",
+    "subscriberCount": 463000000,
+    "viewCount": 89410000000,
+    "videoCount": 944,
+    "thumbnailUrl": "https://...",
+    "insights": {
+      "trend": "growing",
+      "recommendations": ["Post consistently", "Engage with comments"]
+    }
+  }
+}
+```
+
+---
+
+### Example 6: Get Channel Growth Data
+
+**Goal:** Track channel growth over time
+
+1. Add a **Smart Profiling** node
+2. Set **Resource** → `Channel`
+3. Set **Operation** → `Get Growth`
+4. Enter the **Channel ID or Handle**: `@MrBeast`
+5. Select **Time Period**: `30d` (or 7d, 90d, 365d)
+
+**Output:**
+```json
+{
+  "success": true,
+  "data": {
+    "channelId": "UCX6OQ3DkcsbYNE6H8uQQuVA",
+    "period": "30d",
+    "dataPoints": [
+      { "date": "2026-01-01", "subscriberCount": 460000000, "viewCount": 88000000000 },
+      { "date": "2026-01-15", "subscriberCount": 461500000, "viewCount": 88700000000 }
+    ],
+    "summary": {
+      "subscriberChange": 3000000,
+      "subscriberChangePercent": 0.65,
+      "viewChange": 1410000000,
+      "viewChangePercent": 1.6
+    }
+  }
+}
+```
+
+---
+
 ## Workflow Templates
 
 ### Template 1: Daily YouTube Digest
@@ -167,6 +234,34 @@ Loop Over Items
 Smart Profiling (Transcript → Get Single)
     ↓
 Google Sheets / Airtable / Database
+```
+
+### Template 4: Creator Analytics Dashboard
+
+```
+Schedule Trigger (Daily)
+    ↓
+Smart Profiling (Channel → Get Stats) [Multiple channels]
+    ↓
+Smart Profiling (Channel → Get Growth)
+    ↓
+Compare & Calculate Trends
+    ↓
+Store in Database / Send Report
+```
+
+### Template 5: Competitor Monitoring
+
+```
+Schedule Trigger (Weekly)
+    ↓
+Smart Profiling (Channel → Get Stats) [Your channel]
+    ↓
+Smart Profiling (Channel → Get Stats) [Competitor channels]
+    ↓
+Compare Growth Rates
+    ↓
+Slack / Email Alert if competitor is growing faster
 ```
 
 ---
@@ -207,6 +302,8 @@ Google Sheets / Airtable / Database
 | Get Videos | Get all videos from channel |
 | Get Shorts | Get shorts from channel |
 | Get Playlists | Get playlists from channel |
+| Get Stats | Get channel statistics (subscribers, views, videos) |
+| Get Growth | Get historical growth data (7d, 30d, 90d, 365d) |
 
 #### Playlist
 | Operation | Description |
@@ -241,7 +338,7 @@ Google Sheets / Airtable / Database
 ### "Node not appearing in search"
 
 1. Go to **Settings** → **Community Nodes**
-2. Check if `n8n-nodes-smartprofiling` shows version `0.1.7`
+2. Check if `n8n-nodes-smartprofiling` shows version `0.1.9`
 3. If not, click **Update** or uninstall/reinstall
 4. Hard refresh browser: `Ctrl+Shift+R` (Windows) or `Cmd+Shift+R` (Mac)
 
