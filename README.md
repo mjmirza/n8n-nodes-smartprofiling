@@ -3,6 +3,7 @@
 > **Extract YouTube transcripts, generate AI summaries, and chat with videos** - all directly in your n8n workflows.
 
 [![npm version](https://badge.fury.io/js/n8n-nodes-smartprofiling.svg)](https://www.npmjs.com/package/n8n-nodes-smartprofiling)
+[![npm provenance](https://img.shields.io/badge/npm-provenance-blue)](https://www.npmjs.com/package/n8n-nodes-smartprofiling#provenance)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ---

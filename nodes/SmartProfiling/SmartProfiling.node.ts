@@ -7,7 +7,7 @@ import type {
 	IDataObject,
 	JsonObject,
 } from 'n8n-workflow';
-import { NodeApiError, NodeOperationError } from 'n8n-workflow';
+import { NodeApiError, NodeConnectionTypes, NodeOperationError, sleep } from 'n8n-workflow';
 import { transcriptDescription } from './resources/transcript';
 import { summarizeDescription } from './resources/summarize';
 import { chatDescription } from './resources/chat';
@@ -25,11 +25,6 @@ const RETRY_CONFIG = {
 	retryableStatusCodes: [408, 429, 500, 502, 503, 504],
 };
 
-// Sleep helper
-function sleep(ms: number): Promise<void> {
-	return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 // Calculate delay with exponential backoff
 function getRetryDelay(attempt: number): number {
 	const delay = RETRY_CONFIG.initialDelayMs * Math.pow(RETRY_CONFIG.backoffMultiplier, attempt);
@@ -40,7 +35,7 @@ export class SmartProfiling implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'Smart Profiling',
 		name: 'smartProfiling',
-		icon: 'file:smartprofiling.svg',
+		icon: { light: 'file:smartprofiling.svg', dark: 'file:smartprofiling.dark.svg' },
 		group: ['transform'],
 		version: 1,
 		subtitle: '={{$parameter["operation"] + ": " + $parameter["resource"]}}',
@@ -49,8 +44,8 @@ export class SmartProfiling implements INodeType {
 			name: 'Smart Profiling',
 		},
 		usableAsTool: true,
-		inputs: ['main'],
-		outputs: ['main'],
+		inputs: [NodeConnectionTypes.Main],
+		outputs: [NodeConnectionTypes.Main],
 		credentials: [
 			{
 				name: 'smartProfilingApi',
@@ -85,7 +80,7 @@ export class SmartProfiling implements INodeType {
 						description: 'Get videos from a playlist',
 					},
 					{
-						name: 'Speakers',
+						name: 'Speaker',
 						value: 'speakers',
 						description: 'Identify and label speakers in video transcript',
 					},
@@ -122,7 +117,7 @@ export class SmartProfiling implements INodeType {
 						},
 					},
 					{
-						displayName: 'Initial Delay (ms)',
+						displayName: 'Initial Delay (Ms)',
 						name: 'initialDelay',
 						type: 'number',
 						default: 1000,
@@ -310,7 +305,6 @@ export class SmartProfiling implements INodeType {
 							headers: {
 								Accept: 'application/json',
 								'Content-Type': 'application/json',
-								Authorization: `Bearer ${credentials.apiKey}`,
 							},
 							json: true,
 							timeout,
@@ -331,12 +325,17 @@ export class SmartProfiling implements INodeType {
 							requestOptions.body = body;
 						}
 
-						response = await this.helpers.request(requestOptions);
+						response = await this.helpers.httpRequestWithAuthentication.call(
+							this,
+							'smartProfilingApi',
+							requestOptions,
+						);
 						// Success - break out of retry loop
 						break;
 					} catch (error: unknown) {
 						lastError = error as Error;
-						const statusCode = (error as { statusCode?: number }).statusCode;
+						const err = error as { statusCode?: number; httpCode?: string; response?: { status?: number } };
+						const statusCode = err.statusCode ?? err.response?.status ?? (err.httpCode ? Number(err.httpCode) : undefined);
 
 						// Check if error is retryable
 						if (statusCode && RETRY_CONFIG.retryableStatusCodes.includes(statusCode)) {
@@ -349,12 +348,12 @@ export class SmartProfiling implements INodeType {
 						}
 
 						// Non-retryable error or max retries reached
-						throw error;
+						throw new NodeApiError(this.getNode(), error as JsonObject, { itemIndex });
 					}
 				}
 
 				if (!response && lastError) {
-					throw lastError;
+					throw new NodeApiError(this.getNode(), lastError as unknown as JsonObject, { itemIndex });
 				}
 
 				// Parse response if it's a string

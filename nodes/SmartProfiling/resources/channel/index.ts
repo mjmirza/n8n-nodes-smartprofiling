@@ -16,17 +16,23 @@ export const channelDescription: INodeProperties[] = [
 		},
 		options: [
 			{
-				name: 'Get Videos',
-				value: 'getVideos',
-				action: 'Get channel videos',
-				description: 'Get list of videos from a YouTube channel',
+				name: 'Get Growth',
+				value: 'getGrowth',
+				action: 'Get channel growth data',
+				description: 'Get historical growth data for subscribers, views, and videos over time',
+			},
+			{
+				name: 'Get Playlists',
+				value: 'getPlaylists',
+				action: 'Get channel playlists',
+				description: 'Get list of playlists from a YouTube channel',
 				routing: {
 					request: {
 						method: 'GET',
 						url: '/api/v1/channels',
 						qs: {
 							id: '={{$parameter.channelId}}',
-							content: 'videos',
+							content: 'playlists',
 							continuationToken: '={{$parameter.additionalOptions.continuationToken || undefined}}',
 						},
 					},
@@ -50,33 +56,27 @@ export const channelDescription: INodeProperties[] = [
 				},
 			},
 			{
-				name: 'Get Playlists',
-				value: 'getPlaylists',
-				action: 'Get channel playlists',
-				description: 'Get list of playlists from a YouTube channel',
-				routing: {
-					request: {
-						method: 'GET',
-						url: '/api/v1/channels',
-						qs: {
-							id: '={{$parameter.channelId}}',
-							content: 'playlists',
-							continuationToken: '={{$parameter.additionalOptions.continuationToken || undefined}}',
-						},
-					},
-				},
-			},
-			{
 				name: 'Get Stats',
 				value: 'getStats',
 				action: 'Get channel statistics',
 				description: 'Get comprehensive channel statistics including subscribers, views, and videos',
 			},
 			{
-				name: 'Get Growth',
-				value: 'getGrowth',
-				action: 'Get channel growth data',
-				description: 'Get historical growth data for subscribers, views, and videos over time',
+				name: 'Get Videos',
+				value: 'getVideos',
+				action: 'Get channel videos',
+				description: 'Get list of videos from a YouTube channel',
+				routing: {
+					request: {
+						method: 'GET',
+						url: '/api/v1/channels',
+						qs: {
+							id: '={{$parameter.channelId}}',
+							content: 'videos',
+							continuationToken: '={{$parameter.additionalOptions.continuationToken || undefined}}',
+						},
+					},
+				},
 			},
 		],
 		default: 'getVideos',
@@ -169,6 +169,7 @@ export const channelDescription: INodeProperties[] = [
 			{
 				displayName: 'Continuation Token',
 				name: 'continuationToken',
+				// eslint-disable-next-line n8n-nodes-base/node-param-type-options-password-missing -- pagination cursor, not a secret
 				type: 'string',
 				default: '',
 				placeholder: 'Paste continuationToken from previous response',
