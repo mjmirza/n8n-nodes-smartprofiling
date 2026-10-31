@@ -2,7 +2,7 @@
 	"name": "n8n-nodes-smartprofiling",
 	"version": "0.1.10",
 	"description": "n8n community node for Smart Profiling - Extract transcripts, generate AI summaries, and chat with YouTube videos",
-	"license": "MIT",
+	"license": "SEE LICENSE IN LICENSE",
 	"homepage": "https://smartprofiling.com",
 	"keywords": [
 		"n8n-community-node-package",

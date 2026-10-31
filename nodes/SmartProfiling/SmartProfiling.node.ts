@@ -7,7 +7,7 @@ import type {
 	IDataObject,
 	JsonObject,
 } from 'n8n-workflow';
-import { NodeApiError, NodeOperationError, sleep } from 'n8n-workflow';
+import { NodeApiError, NodeConnectionTypes, NodeOperationError, sleep } from 'n8n-workflow';
 import { transcriptDescription } from './resources/transcript';
 import { summarizeDescription } from './resources/summarize';
 import { chatDescription } from './resources/chat';
@@ -35,7 +35,7 @@ export class SmartProfiling implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'Smart Profiling',
 		name: 'smartProfiling',
-		icon: 'file:smartprofiling.svg',
+		icon: { light: 'file:smartprofiling.svg', dark: 'file:smartprofiling.dark.svg' },
 		group: ['transform'],
 		version: 1,
 		subtitle: '={{$parameter["operation"] + ": " + $parameter["resource"]}}',
@@ -44,8 +44,8 @@ export class SmartProfiling implements INodeType {
 			name: 'Smart Profiling',
 		},
 		usableAsTool: true,
-		inputs: ['main'],
-		outputs: ['main'],
+		inputs: [NodeConnectionTypes.Main],
+		outputs: [NodeConnectionTypes.Main],
 		credentials: [
 			{
 				name: 'smartProfilingApi',
@@ -305,7 +305,6 @@ export class SmartProfiling implements INodeType {
 							headers: {
 								Accept: 'application/json',
 								'Content-Type': 'application/json',
-								Authorization: `Bearer ${credentials.apiKey}`,
 							},
 							json: true,
 							timeout,
@@ -326,7 +325,11 @@ export class SmartProfiling implements INodeType {
 							requestOptions.body = body;
 						}
 
-						response = await this.helpers.httpRequest(requestOptions);
+						response = await this.helpers.httpRequestWithAuthentication.call(
+							this,
+							'smartProfilingApi',
+							requestOptions,
+						);
 						// Success - break out of retry loop
 						break;
 					} catch (error: unknown) {
@@ -345,12 +348,12 @@ export class SmartProfiling implements INodeType {
 						}
 
 						// Non-retryable error or max retries reached
-						throw error;
+						throw new NodeApiError(this.getNode(), error as JsonObject, { itemIndex });
 					}
 				}
 
 				if (!response && lastError) {
-					throw lastError;
+					throw new NodeApiError(this.getNode(), lastError as unknown as JsonObject, { itemIndex });
 				}
 
 				// Parse response if it's a string
