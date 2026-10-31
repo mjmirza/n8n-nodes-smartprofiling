@@ -7,7 +7,7 @@ import type {
 	IDataObject,
 	JsonObject,
 } from 'n8n-workflow';
-import { NodeApiError, NodeOperationError } from 'n8n-workflow';
+import { NodeApiError, NodeOperationError, sleep } from 'n8n-workflow';
 import { transcriptDescription } from './resources/transcript';
 import { summarizeDescription } from './resources/summarize';
 import { chatDescription } from './resources/chat';
@@ -24,11 +24,6 @@ const RETRY_CONFIG = {
 	backoffMultiplier: 2,
 	retryableStatusCodes: [408, 429, 500, 502, 503, 504],
 };
-
-// Sleep helper
-function sleep(ms: number): Promise<void> {
-	return new Promise((resolve) => setTimeout(resolve, ms));
-}
 
 // Calculate delay with exponential backoff
 function getRetryDelay(attempt: number): number {
@@ -85,7 +80,7 @@ export class SmartProfiling implements INodeType {
 						description: 'Get videos from a playlist',
 					},
 					{
-						name: 'Speakers',
+						name: 'Speaker',
 						value: 'speakers',
 						description: 'Identify and label speakers in video transcript',
 					},
@@ -122,7 +117,7 @@ export class SmartProfiling implements INodeType {
 						},
 					},
 					{
-						displayName: 'Initial Delay (ms)',
+						displayName: 'Initial Delay (Ms)',
 						name: 'initialDelay',
 						type: 'number',
 						default: 1000,
@@ -331,12 +326,13 @@ export class SmartProfiling implements INodeType {
 							requestOptions.body = body;
 						}
 
-						response = await this.helpers.request(requestOptions);
+						response = await this.helpers.httpRequest(requestOptions);
 						// Success - break out of retry loop
 						break;
 					} catch (error: unknown) {
 						lastError = error as Error;
-						const statusCode = (error as { statusCode?: number }).statusCode;
+						const err = error as { statusCode?: number; httpCode?: string; response?: { status?: number } };
+						const statusCode = err.statusCode ?? err.response?.status ?? (err.httpCode ? Number(err.httpCode) : undefined);
 
 						// Check if error is retryable
 						if (statusCode && RETRY_CONFIG.retryableStatusCodes.includes(statusCode)) {

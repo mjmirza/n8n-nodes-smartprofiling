@@ -1,6 +1,6 @@
 {
 	"name": "n8n-nodes-smartprofiling",
-	"version": "0.1.9",
+	"version": "0.1.10",
 	"description": "n8n community node for Smart Profiling - Extract transcripts, generate AI summaries, and chat with YouTube videos",
 	"license": "MIT",
 	"homepage": "https://smartprofiling.com",
@@ -27,10 +27,12 @@
 		"lint": "n8n-node lint",
 		"lint:fix": "n8n-node lint --fix",
 		"release": "n8n-node release",
-		"prepublishOnly": "n8n-node prerelease"
+		"prepublishOnly": "n8n-node prerelease",
+		"test": "npm run lint && npm run build"
 	},
 	"files": [
-		"dist"
+		"dist",
+		"!dist/tsconfig.tsbuildinfo"
 	],
 	"n8n": {
 		"n8nNodesApiVersion": 1,
@@ -53,5 +55,16 @@
 	},
 	"engines": {
 		"node": ">=18.0.0"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/mjmirza/n8n-nodes-smartprofiling.git"
+	},
+	"bugs": {
+		"url": "https://github.com/mjmirza/n8n-nodes-smartprofiling/issues"
+	},
+	"publishConfig": {
+		"access": "public",
+		"provenance": true
 	}
 }
