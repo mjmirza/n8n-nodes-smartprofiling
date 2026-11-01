@@ -44,20 +44,22 @@ Turn any YouTube video, channel or playlist into transcripts, summaries, chapter
 
 Every operation supports n8n's **Continue On Fail**, and failed items keep the HTTP status code. Rate limits are retried with backoff and honor the API's Retry-After header. If the API asks for a wait longer than two minutes, the node stops and reports it rather than waiting. Server errors are retried only on calls that do not use credits, so a paid request is never charged twice.
 
+Each request returns one item. List operations keep their results in `data.videos`, `data.shorts` or `data.playlists`, so use n8n's Split Out node to process them one at a time.
+
 Summary Length, Custom Prompt, Max Speakers, and the chat Max Tokens and Temperature are sent with the request but not yet applied by the API.
 
-New nodes use version 1.1, which always sends the playlist Limit. A version 1 node sends the Limit when the workflow saved a value for it, and otherwise gets the API default of 200 videos.
+New nodes use version 1.1, which always sends the playlist Limit. A version 1 node sends the Limit when the saved workflow stores a value for it, and otherwise gets the API default of 200 videos. See [docs/DESIGN-DECISIONS.md](docs/DESIGN-DECISIONS.md).
 
 ### Example workflows
 
 Daily digest:
-- Schedule Trigger, then Channel Get Videos, then Summarize Generate Summary per video, then send to email, Slack or Notion.
+- Schedule Trigger, then Channel Get Videos, then Split Out on `data.videos`, then Summarize Generate Summary per video, then send to email, Slack or Notion.
 
 Video question bot:
 - Webhook, then Chat Send Message, then Respond to Webhook.
 
 Bulk transcript export:
-- Playlist Get Videos, then Transcript Get Single per item, then Google Sheets or a database.
+- Playlist Get Videos, then Split Out on `data.videos`, then Transcript Get Single per video, then Google Sheets or a database.
 
 ## Credentials
 

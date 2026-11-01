@@ -200,11 +200,9 @@ export function buildRequest(
 		const input = String(get('playlistId') ?? '').trim();
 		// The API reads a full URL from `url` and a bare ID from `id`.
 		const qs: IDataObject = /^https?:\/\//i.test(input) ? { url: input } : { id: input };
-		// Version 1 keeps the 0.1.x request, the API default of 200, unless the user set their own Limit.
+		// Version 1 sends a Limit only when the workflow stores one. The editor never stores the default, see docs/DESIGN-DECISIONS.md.
 		const limit = get('limit', 50);
-		// A saved 50 is the default, which the n8n UI never saves, so only a different value is the user's explicit Limit.
-		const saved = savedParameters.limit;
-		const send = typeVersion >= 1.1 || (saved !== undefined && saved !== 50);
+		const send = typeVersion >= 1.1 || savedParameters.limit !== undefined;
 		if (send && typeof limit === 'number' && Number.isFinite(limit)) qs.limit = limit;
 		return { method: 'GET', endpoint: '/api/v1/playlists', qs, body: {}, billable: true };
 	}
