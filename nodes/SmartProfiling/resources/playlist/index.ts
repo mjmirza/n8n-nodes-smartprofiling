@@ -19,7 +19,7 @@ export const playlistDescription: INodeProperties[] = [
 				name: 'Get Videos',
 				value: 'getVideos',
 				action: 'Get playlist videos',
-				description: 'Get all videos from a YouTube playlist',
+				description: 'Get the videos on the first page YouTube returns for a playlist, usually up to 100',
 				routing: {
 					request: {
 						method: 'GET',
@@ -53,5 +53,6 @@ export const playlistDescription: INodeProperties[] = [
 			maxValue: 500,
 		},
 		description: 'Max number of results to return',
+		hint: 'The API reads only the first page of the playlist, usually up to 100 videos',
 	},
 ];

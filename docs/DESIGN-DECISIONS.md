@@ -1,6 +1,8 @@
 # Design decisions
 
-## Playlist Limit on node version 1
+## Playlist Limit on node version 1 (documented exception)
+
+**Status.** Maintainer decision: shipped behaviour kept, no breaking change; tradeoff and evidence below.
 
 **Decision.** A version 1 node sends the Limit only when the saved workflow stores a `limit` value. Any stored value is sent, including 50. A node that stores no limit sends none, and the API returns its default of up to 200 videos.
 
