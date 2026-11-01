@@ -30,8 +30,8 @@ Turn any YouTube video, channel or playlist into transcripts, summaries, chapter
 | Resource | Operation | What it does |
 |---|---|---|
 | Channel | Get Videos | Lists a channel's videos. The continuation token field is not yet applied by the API, so it returns the first page |
-| Channel | Get Shorts | Lists a channel's shorts |
-| Channel | Get Playlists | Lists a channel's playlists |
+| Channel | Get Shorts | Lists a channel's shorts. The continuation token is not yet applied by the API, so it returns the first page |
+| Channel | Get Playlists | Lists a channel's playlists. The continuation token is not yet applied by the API, so it returns the first page |
 | Channel | Get Stats | Subscribers, views and video count, with optional AI insights |
 | Channel | Get Growth | Growth data for 7, 30, 90 or 365 days |
 | Chapter | Generate Chapters | Timestamped chapters as JSON, YouTube description text or Markdown, with optional minimum length and maximum count |
@@ -46,7 +46,7 @@ Every operation supports n8n's **Continue On Fail**, and failed items keep the H
 
 Summary Length, Custom Prompt, Max Speakers, and the chat Max Tokens and Temperature are sent with the request but not yet applied by the API.
 
-New nodes use version 1.1, which sends the playlist Limit. Nodes saved on version 1 keep the old behavior and get the API default of 200 videos.
+New nodes use version 1.1, which always sends the playlist Limit. A version 1 node sends the Limit when the workflow saved a value for it, and otherwise gets the API default of 200 videos.
 
 ### Example workflows
 

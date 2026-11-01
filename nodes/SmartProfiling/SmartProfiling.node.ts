@@ -21,6 +21,8 @@ import {
 	isRetryable,
 	normalizeBaseUrl,
 	retryAfterOf,
+	apiErrorMessage,
+	HttpStatusError,
 	retryDelayMs,
 	statusOf,
 } from './request';
@@ -173,6 +175,7 @@ export class SmartProfiling implements INodeType {
 					operation,
 					(name, fallback) => this.getNodeParameter(name, itemIndex, fallback) as IDataObject[keyof IDataObject],
 					this.getNode().typeVersion,
+					this.getNode().parameters,
 				);
 
 				const requestOptions: IHttpRequestOptions = {
@@ -181,6 +184,9 @@ export class SmartProfiling implements INodeType {
 					headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
 					json: true,
 					timeout,
+					// n8n drops response headers when it wraps an HTTP error, so read the status here to keep Retry-After.
+					returnFullResponse: true,
+					ignoreHttpStatusErrors: true,
 				};
 				const qs: IDataObject = {};
 				for (const [key, value] of Object.entries(request.qs)) {
@@ -193,25 +199,41 @@ export class SmartProfiling implements INodeType {
 
 				let response: unknown;
 				for (let attempt = 0; ; attempt++) {
+					let failure: unknown;
 					try {
-						response = await this.helpers.httpRequestWithAuthentication.call(
+						const full = (await this.helpers.httpRequestWithAuthentication.call(
 							this,
 							'smartProfilingApi',
 							requestOptions,
-						);
-						break;
-					} catch (error) {
-						const statusCode = statusOf(error);
-						if (attempt < maxRetries && isRetryable(statusCode, request.billable)) {
-							const delay = retryDelayMs(attempt, initialDelay, retryAfterOf(error));
-							this.logger.warn(
-								`Request failed with status ${statusCode}, retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries})`,
-							);
-							await sleep(delay);
-							continue;
+						)) as { statusCode?: number; headers?: IDataObject; body?: unknown };
+						const status = Number(full?.statusCode ?? 200);
+						if (status < 400) {
+							response = full?.body;
+							break;
 						}
-						throw new NodeApiError(this.getNode(), error as JsonObject, { itemIndex });
+						failure = new HttpStatusError(status, full?.headers, full?.body);
+					} catch (error) {
+						failure = error;
 					}
+
+					const statusCode = statusOf(failure);
+					if (attempt < maxRetries && isRetryable(statusCode, request.billable)) {
+						const delay = retryDelayMs(attempt, initialDelay, retryAfterOf(failure));
+						this.logger.warn(
+							`Request failed with status ${statusCode}, retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries})`,
+						);
+						await sleep(delay);
+						continue;
+					}
+					if (failure instanceof HttpStatusError) {
+						const body = failure.body && typeof failure.body === 'object' ? failure.body : { message: String(failure.body ?? '') };
+						throw new NodeApiError(this.getNode(), body as JsonObject, {
+							itemIndex,
+							httpCode: String(failure.status),
+							message: apiErrorMessage(failure.body, failure.status),
+						});
+					}
+					throw new NodeApiError(this.getNode(), failure as JsonObject, { itemIndex });
 				}
 
 				let responseData: unknown = response;

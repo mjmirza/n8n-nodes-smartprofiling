@@ -2,40 +2,11 @@
 // Behavior tests for the built node. Run with `npm test` after `npm run build`.
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { NodeApiError } = require('n8n-workflow');
 const { SmartProfiling } = require('../dist/nodes/SmartProfiling/SmartProfiling.node.js');
 const { SmartProfilingApi } = require('../dist/credentials/SmartProfilingApi.credentials.js');
 
-const NODE = { id: 'n', name: 'Smart Profiling', type: 'x', typeVersion: 1.1, position: [0, 0], parameters: {} };
-
-function ctx(params, responses, opts = {}) {
-	const calls = [];
-	const queue = Array.isArray(responses) ? [...responses] : null;
-	return {
-		calls,
-		getInputData: () => opts.items ?? [{ json: {} }],
-		getNodeParameter: (name, _i, fallback) => (name in params ? params[name] : fallback),
-		getCredentials: async () => ({ apiKey: 'sp_test', baseUrl: opts.baseUrl ?? 'https://smartprofiling.com' }),
-		continueOnFail: () => opts.continueOnFail ?? false,
-		getNode: () => NODE,
-		logger: { info() {}, warn() {}, debug() {}, error() {} },
-		helpers: {
-			httpRequestWithAuthentication: async (_cred, options) => {
-				calls.push(options);
-				const next = queue ? queue.shift() : responses;
-				if (typeof next === 'function') return next(options);
-				if (next instanceof Error) throw next;
-				return next;
-			},
-		},
-	};
-}
-
-function apiError(code, headers) {
-	const err = new NodeApiError(NODE, { message: `HTTP ${code}` }, { httpCode: String(code) });
-	if (headers) err.headers = headers;
-	return err;
-}
+const { ctx, http } = require('./fake-n8n.cjs');
+const apiError = (code, headers) => http(code, headers);
 
 const run = (c) => new SmartProfiling().execute.call(c);
 
