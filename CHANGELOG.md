@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.3] - 2026-11-01
+
+### Fixed
+- An invalid Base URL is reported per item, so Continue On Fail returns one error item for each input instead of stopping the run. No request is sent.
+- The publish workflow ships the exact `dist` that the Node 20, 22 and 24 runtime tests checked. Previously the publish job rebuilt it.
+- The README limits the provenance claim to versions since 0.1.10. Earlier versions were published unsigned.
+- docs/DESIGN-DECISIONS.md records the credential-test Base URL finding as an exception accepted by the owner.
+
 ## [0.4.2] - 2026-11-01
 
 ### Fixed

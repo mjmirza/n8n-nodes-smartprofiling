@@ -30,3 +30,13 @@ So a stored `limit: 50` can only come from a workflow written outside the editor
 - Dropping a stored 50 (0.3.2). This silently changes an explicit value to the API default of 200.
 - Dropping every stored Limit on version 1 (0.3.0). This breaks workflows saved on 0.2.0, which sent their Limit.
 - A version 1.2 with a "Use API default" toggle. It would not change how existing version 1 nodes behave, and version 1.1 already sends the Limit.
+
+## Credential test and unusual Base URLs (accepted exception)
+
+**Status.** Accepted by owner, blocked by a local file-protection policy.
+
+**Finding.** The credential test maps a blank Base URL, or one with an explicit port such as `https://smartprofiling.com:443`, to an invalid host, so the test fails. Execution normalizes both and runs. The fix belongs in `credentials/SmartProfilingApi.credentials.ts`.
+
+**Why it stays open.** The maintainer's development setup blocks automated edits to every file under a `credentials/` directory. The owner chose to keep that policy unchanged and accept this Low finding. Credential type files hold no secrets, but the policy does not distinguish them.
+
+**Impact.** Only the credential test is affected. A Base URL left at its default, or written without a port, tests and runs normally. Workaround. Use `https://smartprofiling.com` without a port.

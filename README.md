@@ -15,7 +15,7 @@ Turn any YouTube video, channel or playlist into transcripts, summaries, chapter
 - **Answers from a video.** Send a question and get an answer grounded in what the video actually says.
 - **Chapters and speakers.** Timestamped chapters ready for a YouTube description, and speakers labelled in interviews and podcasts.
 - **Channel intelligence.** Videos, shorts, playlists, subscriber and view counts, and growth over 7 to 365 days for any channel.
-- **Signed releases.** Every version is published from GitHub Actions with npm provenance, so you can trace it to the exact commit.
+- **Signed releases.** Every version since 0.1.10 is published from GitHub Actions with npm provenance, so you can trace it to the exact commit. Earlier versions were published unsigned.
 
 ## From install to first result
 
