@@ -1,6 +1,6 @@
 {
 	"name": "n8n-nodes-smartprofiling",
-	"version": "0.1.10",
+	"version": "0.1.11",
 	"description": "n8n community node for Smart Profiling - Extract transcripts, generate AI summaries, and chat with YouTube videos",
 	"license": "MIT",
 	"homepage": "https://smartprofiling.com",
@@ -44,8 +44,8 @@
 		]
 	},
 	"devDependencies": {
-		"@n8n/node-cli": "*",
-		"eslint": "9.32.0",
+		"@n8n/node-cli": "^0.54.6",
+		"eslint": "^10.14.0",
 		"prettier": "3.6.2",
 		"release-it": "^19.0.4",
 		"typescript": "5.9.2"

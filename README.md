@@ -1,387 +1,106 @@
 # n8n-nodes-smartprofiling
 
-> **Extract YouTube transcripts, generate AI summaries, and chat with videos** - all directly in your n8n workflows.
-
-[![npm version](https://badge.fury.io/js/n8n-nodes-smartprofiling.svg)](https://www.npmjs.com/package/n8n-nodes-smartprofiling)
-[![npm provenance](https://img.shields.io/badge/npm-provenance-blue)](https://www.npmjs.com/package/n8n-nodes-smartprofiling#provenance)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-
----
-
-## Quick Start (2 minutes)
-
-### Step 1: Install the Node
-
-1. Open your n8n instance
-2. Go to **Settings** (gear icon) → **Community Nodes**
-3. Click **Install a community node**
-4. Paste: `n8n-nodes-smartprofiling`
-5. Click **Install**
-
-### Step 2: Get Your API Key
-
-1. Go to [smartprofiling.com/signup](https://smartprofiling.com/signup)
-2. Create a free account
-3. Go to **Dashboard** → **API Keys**
-4. Click **Create API Key**
-5. Copy your key (starts with `sp_`)
-
-### Step 3: Add Credentials in n8n
-
-1. In n8n, go to **Credentials** → **Add Credential**
-2. Search for **Smart Profiling API**
-3. Paste your API key
-4. Click **Save**
-
-**Done!** You're ready to use the node.
-
----
-
-## What Can You Do?
-
-| Feature | Description | Use Case |
-|---------|-------------|----------|
-| **Transcripts** | Extract captions from any YouTube video | Content repurposing, SEO |
-| **Summarize** | AI-powered video summaries | Newsletter digests, research |
-| **Chat** | Ask questions about video content | Customer support, Q&A bots |
-| **Chapters** | Auto-generate timestamps | YouTube descriptions |
-| **Speakers** | Identify and label speakers | Interview analysis, podcasts |
-| **Channel** | Get all videos from a channel | Bulk processing, monitoring |
-| **Channel Stats** | Get subscriber/view/video counts | Creator analytics |
-| **Channel Growth** | Get historical growth data | Trend analysis |
-| **Playlist** | Get videos from a playlist | Course processing, archives |
-
----
-
-## Step-by-Step Examples
-
-### Example 1: Extract a Transcript
-
-**Goal:** Get the transcript of a YouTube video
-
-1. Add a **Smart Profiling** node to your workflow
-2. Set **Resource** → `Transcript`
-3. Set **Operation** → `Get Single`
-4. Enter the **Video ID**: `dQw4w9WgXcQ` (or paste full URL)
-5. Choose **Format**: `text` or `json`
-6. Execute!
-
-**Output:**
-```json
-{
-  "transcript": "Never gonna give you up, never gonna let you down...",
-  "videoId": "dQw4w9WgXcQ",
-  "language": "en"
-}
-```
-
----
-
-### Example 2: Summarize a Video
-
-**Goal:** Get an AI summary of a video
-
-1. Add a **Smart Profiling** node
-2. Set **Resource** → `Summarize`
-3. Set **Operation** → `Generate Summary`
-4. Enter the **Video ID**
-5. Choose **Summary Type**:
-   - `brief` - 2-3 sentences
-   - `detailed` - Full analysis with key points
-   - `bullets` - Bullet point list
-   - `chapters` - Summary organized by chapters
-
-**Output:**
-```json
-{
-  "summary": "This video explains the basics of...",
-  "videoId": "abc123",
-  "type": "brief"
-}
-```
-
----
-
-### Example 3: Chat with a Video
-
-**Goal:** Ask questions about video content
-
-1. Add a **Smart Profiling** node
-2. Set **Resource** → `Chat`
-3. Set **Operation** → `Ask Question`
-4. Enter the **Video ID**
-5. Type your **Question**: "What are the main topics discussed?"
-
-**Output:**
-```json
-{
-  "answer": "The main topics discussed are...",
-  "videoId": "abc123"
-}
-```
-
----
-
-### Example 4: Get Channel Videos
-
-**Goal:** Get all videos from a YouTube channel
-
-1. Add a **Smart Profiling** node
-2. Set **Resource** → `Channel`
-3. Set **Operation** → `Get Videos`
-4. Enter the **Channel ID or Handle**: `@mkbhd` or `UCBJycsmduvYEL83R_U4JriQ`
-5. Set **Limit**: `50` (max videos to return)
-
-**Output:** Array of video objects with IDs, titles, thumbnails, etc.
-
----
-
-### Example 5: Get Channel Statistics
-
-**Goal:** Get comprehensive channel statistics
-
-1. Add a **Smart Profiling** node
-2. Set **Resource** → `Channel`
-3. Set **Operation** → `Get Stats`
-4. Enter the **Channel ID or Handle**: `@MrBeast`
-5. Optionally enable **Include AI Insights** for growth recommendations
-
-**Output:**
-```json
-{
-  "success": true,
-  "data": {
-    "channelId": "UCX6OQ3DkcsbYNE6H8uQQuVA",
-    "handle": "@MrBeast",
-    "name": "MrBeast",
-    "subscriberCount": 463000000,
-    "viewCount": 89410000000,
-    "videoCount": 944,
-    "thumbnailUrl": "https://...",
-    "insights": {
-      "trend": "growing",
-      "recommendations": ["Post consistently", "Engage with comments"]
-    }
-  }
-}
-```
-
----
-
-### Example 6: Get Channel Growth Data
-
-**Goal:** Track channel growth over time
-
-1. Add a **Smart Profiling** node
-2. Set **Resource** → `Channel`
-3. Set **Operation** → `Get Growth`
-4. Enter the **Channel ID or Handle**: `@MrBeast`
-5. Select **Time Period**: `30d` (or 7d, 90d, 365d)
-
-**Output:**
-```json
-{
-  "success": true,
-  "data": {
-    "channelId": "UCX6OQ3DkcsbYNE6H8uQQuVA",
-    "period": "30d",
-    "dataPoints": [
-      { "date": "2026-01-01", "subscriberCount": 460000000, "viewCount": 88000000000 },
-      { "date": "2026-01-15", "subscriberCount": 461500000, "viewCount": 88700000000 }
-    ],
-    "summary": {
-      "subscriberChange": 3000000,
-      "subscriberChangePercent": 0.65,
-      "viewChange": 1410000000,
-      "viewChangePercent": 1.6
-    }
-  }
-}
-```
-
----
-
-## Workflow Templates
-
-### Template 1: Daily YouTube Digest
-
-```
-Schedule Trigger (Daily)
-    ↓
-Smart Profiling (Channel → Get Videos)
-    ↓
-Smart Profiling (Summarize each video)
-    ↓
-Send Email / Slack / Notion
-```
-
-### Template 2: Video Q&A Bot
-
-```
-Webhook (receives question)
-    ↓
-Smart Profiling (Chat → Ask Question)
-    ↓
-Respond to Webhook
-```
-
-### Template 3: Bulk Transcript Export
-
-```
-Smart Profiling (Playlist → Get Videos)
-    ↓
-Loop Over Items
-    ↓
-Smart Profiling (Transcript → Get Single)
-    ↓
-Google Sheets / Airtable / Database
-```
-
-### Template 4: Creator Analytics Dashboard
-
-```
-Schedule Trigger (Daily)
-    ↓
-Smart Profiling (Channel → Get Stats) [Multiple channels]
-    ↓
-Smart Profiling (Channel → Get Growth)
-    ↓
-Compare & Calculate Trends
-    ↓
-Store in Database / Send Report
-```
-
-### Template 5: Competitor Monitoring
-
-```
-Schedule Trigger (Weekly)
-    ↓
-Smart Profiling (Channel → Get Stats) [Your channel]
-    ↓
-Smart Profiling (Channel → Get Stats) [Competitor channels]
-    ↓
-Compare Growth Rates
-    ↓
-Slack / Email Alert if competitor is growing faster
-```
-
----
-
-## API Reference
-
-### Resources & Operations
-
-#### Transcript
-| Operation | Description |
-|-----------|-------------|
-| Get Single | Extract transcript from one video |
-| Get Bulk | Extract transcripts from multiple videos |
-
-#### Summarize
-| Operation | Description |
-|-----------|-------------|
-| Generate Summary | AI summary (brief/detailed/bullets/takeaways) |
-
-#### Chat
-| Operation | Description |
-|-----------|-------------|
-| Ask Question | Ask a question about video content |
-
-#### Chapter
-| Operation | Description |
-|-----------|-------------|
-| Generate Chapters | Auto-generate timestamps |
-
-#### Speakers
-| Operation | Description |
-|-----------|-------------|
-| Identify Speakers | Identify and label speakers in transcript |
-
-#### Channel
-| Operation | Description |
-|-----------|-------------|
-| Get Videos | Get all videos from channel |
-| Get Shorts | Get shorts from channel |
-| Get Playlists | Get playlists from channel |
-| Get Stats | Get channel statistics (subscribers, views, videos) |
-| Get Growth | Get historical growth data (7d, 30d, 90d, 365d) |
-
-#### Playlist
-| Operation | Description |
-|-----------|-------------|
-| Get Videos | Get all videos in a playlist |
-
----
-
-## Supported Formats
-
-### Transcript Formats
-- `json` - Structured JSON with timestamps
-- `text` - Plain text
-- `srt` - SubRip subtitle format
-- `vtt` - WebVTT subtitle format
-
-### Summary Types
-- `brief` - 2-3 sentence summary
-- `detailed` - Comprehensive with key points
-- `bullet-points` - Bullet point list
-- `chapters` - Summary organized by video chapters
-
-### Chapter Formats
-- `json` - Structured data
-- `youtube` - Ready for YouTube description
-- `markdown` - Markdown formatted
-
----
+Turn any YouTube video, channel or playlist into transcripts, summaries, chapters and answers inside your n8n workflows.
+
+[![npm version](https://img.shields.io/npm/v/n8n-nodes-smartprofiling)](https://www.npmjs.com/package/n8n-nodes-smartprofiling)
+[![npm downloads](https://img.shields.io/npm/dm/n8n-nodes-smartprofiling)](https://www.npmjs.com/package/n8n-nodes-smartprofiling)
+[![CI](https://img.shields.io/github/actions/workflow/status/mjmirza/n8n-nodes-smartprofiling/ci.yml?branch=main&label=CI)](https://github.com/mjmirza/n8n-nodes-smartprofiling/actions/workflows/ci.yml)
+[![Signed with npm provenance](https://img.shields.io/badge/npm-provenance%20signed-brightgreen)](https://www.npmjs.com/package/n8n-nodes-smartprofiling#provenance)
+[![License MIT](https://img.shields.io/npm/l/n8n-nodes-smartprofiling)](LICENSE.md)
+
+## What you get
+
+- **A transcript in one step.** Paste a video ID or URL and get clean text back, ready for a sheet, a CMS or an AI step.
+- **Summaries without watching.** Brief, detailed, bullet point or chapter summaries, in the length you choose.
+- **Answers from a video.** Send a question and get an answer grounded in what the video actually says.
+- **Chapters and speakers.** Timestamped chapters ready for a YouTube description, and speakers labelled in interviews and podcasts.
+- **Channel intelligence.** Videos, shorts, playlists, subscriber and view counts, and growth over 7 to 365 days for any channel.
+- **Signed releases.** Every version is published from GitHub Actions with npm provenance, so you can trace it to the exact commit.
+
+## From install to first result
+
+1. In n8n open **Settings**, then **Community Nodes**, then **Install a community node**, enter `n8n-nodes-smartprofiling` and install.
+2. Create an API key at [smartprofiling.com](https://smartprofiling.com) under **Dashboard**, then **API Keys**. Keys start with `sp_`.
+3. In n8n add a credential of type **Smart Profiling API** and paste the key.
+4. Add a **Smart Profiling** node, pick **Transcript** and **Get Single**, enter a video ID such as `dQw4w9WgXcQ`, and run it.
+5. The transcript appears in the output panel. Connect it to any next step.
+
+## Operations
+
+| Resource | Operation | What it does |
+|---|---|---|
+| Channel | Get Videos | Lists a channel's videos, with a continuation token for the next page |
+| Channel | Get Shorts | Lists a channel's shorts |
+| Channel | Get Playlists | Lists a channel's playlists |
+| Channel | Get Stats | Subscribers, views and video count, with optional AI insights |
+| Channel | Get Growth | Growth data for 7, 30, 90 or 365 days |
+| Chapter | Generate Chapters | Timestamped chapters as JSON, YouTube description text or Markdown |
+| Chat | Send Message | Asks a question about a video and keeps a conversation ID for follow ups |
+| Playlist | Get Videos | Lists the videos in a playlist |
+| Speaker | Identify Speakers | Labels who speaks when |
+| Summarize | Generate Summary | Brief, Detailed, Bullet Points or Chapters format in Short, Medium or Long length |
+| Transcript | Get Single | Transcript for one video, as Timeline, Plain, Paragraph or Sentences |
+| Transcript | Get Bulk | Transcripts for several videos in one request |
+
+Every operation supports n8n's **Continue On Fail** and has configurable retries with backoff for rate limits.
+
+### Example workflows
+
+Daily digest:
+- Schedule Trigger, then Channel Get Videos, then Summarize Generate Summary per video, then send to email, Slack or Notion.
+
+Video question bot:
+- Webhook, then Chat Send Message, then Respond to Webhook.
+
+Bulk transcript export:
+- Playlist Get Videos, then Transcript Get Single per item, then Google Sheets or a database.
+
+## Credentials
+
+| Field | Value |
+|---|---|
+| API Key | Your key from the Smart Profiling dashboard |
+| Base URL | Leave the default unless you were given a dedicated domain |
+
+The credential is tested on save, so a wrong key shows up immediately. API documentation is at [smartprofiling.com/api-docs](https://smartprofiling.com/api-docs).
 
 ## Troubleshooting
 
-### "Node not appearing in search"
+| Symptom | Fix |
+|---|---|
+| Node does not appear | Open Community Nodes, update to the latest version, then hard refresh the browser |
+| Invalid API key | Check the key starts with `sp_` and has no surrounding spaces |
+| Video not found | Make sure the video is public and the ID is correct, or paste the full URL |
+| Rate limit exceeded | Check usage in the dashboard, raise retries, or add a Wait node between bulk calls |
 
-1. Go to **Settings** → **Community Nodes**
-2. Check if `n8n-nodes-smartprofiling` shows version `0.1.9`
-3. If not, click **Update** or uninstall/reinstall
-4. Hard refresh browser: `Ctrl+Shift+R` (Windows) or `Cmd+Shift+R` (Mac)
+## For developers
 
-### "Invalid API Key"
+| Area | Detail |
+|---|---|
+| Language | TypeScript, built with `@n8n/node-cli` |
+| Runtime dependencies | None. Only `n8n-workflow` as a peer |
+| Lint | n8n community node rules, the same set n8n uses to verify packages |
+| Node.js | 22 or newer for development |
 
-1. Make sure your key starts with `sp_`
-2. Check for extra spaces when copying
-3. Verify key is active at [smartprofiling.com/dashboard](https://smartprofiling.com/dashboard)
+```bash
+npm ci
+npm run lint
+npm run build
+npm run dev   # starts a local n8n with the node loaded
+```
 
-### "Video not found"
+Project layout:
+- `nodes/SmartProfiling/` holds the node, one folder per resource under `resources/`
+- `credentials/` holds the Smart Profiling API credential
+- `.github/workflows/` holds CI and the signed publish workflow
 
-1. Check if video is public (not private/unlisted)
-2. Verify the video ID is correct
-3. Try pasting the full YouTube URL instead
-
-### "Rate limit exceeded"
-
-1. Check your usage at [smartprofiling.com/dashboard](https://smartprofiling.com/dashboard)
-2. Upgrade your plan if needed
-3. Add delays between requests in bulk operations
-
----
-
-## Pricing
-
-| Plan | Credits/Month | Best For |
-|------|---------------|----------|
-| Free | 100 | Testing & small projects |
-| Pro | 10,000 | Regular workflows |
-| Business | 100,000 | High-volume automation |
-
-Get your API key at [smartprofiling.com](https://smartprofiling.com)
-
----
+Releases are cut by pushing a `vX.Y.Z` tag that matches `package.json`. The publish workflow lints, builds and publishes with `--provenance`.
 
 ## Support
 
-- **Documentation:** [smartprofiling.com/api-docs](https://smartprofiling.com/api-docs)
-- **Email:** support@smartprofiling.com
-
----
+- Product and API questions go to support@smartprofiling.com
+- Bugs and feature requests go to [GitHub issues](https://github.com/mjmirza/n8n-nodes-smartprofiling/issues)
 
 ## License
 
-[MIT](LICENSE.md) - Use freely in personal and commercial projects.
+[MIT](LICENSE.md)
