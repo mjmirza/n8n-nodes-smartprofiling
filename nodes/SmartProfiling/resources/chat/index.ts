@@ -68,7 +68,7 @@ export const chatDescription: INodeProperties[] = [
 				name: 'maxTokens',
 				type: 'number',
 				default: 500,
-				description: 'Maximum number of tokens in the response',
+				description: 'Maximum number of tokens in the response. The API does not apply this setting yet.',
 			},
 			{
 				displayName: 'Temperature',
@@ -80,7 +80,7 @@ export const chatDescription: INodeProperties[] = [
 					numberPrecision: 1,
 				},
 				default: 0.7,
-				description: 'Controls randomness in responses (0 = focused, 2 = creative)',
+				description: 'Controls randomness in responses (0 = focused, 2 = creative). The API does not apply this setting yet.',
 			},
 		],
 	},

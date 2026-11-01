@@ -98,7 +98,7 @@ export const summarizeDescription: INodeProperties[] = [
 			},
 		],
 		default: 'medium',
-		description: 'Desired length of the summary',
+		description: 'Desired length of the summary. The API does not apply this setting yet, it is sent so it takes effect once supported.',
 	},
 	{
 		displayName: 'Additional Options',
@@ -127,7 +127,7 @@ export const summarizeDescription: INodeProperties[] = [
 				},
 				default: '',
 				placeholder: 'Focus on the technical aspects...',
-				description: 'Additional instructions for the AI summarizer',
+				description: 'Additional instructions for the AI summarizer. The API does not apply this setting yet, it is sent so it takes effect once supported.',
 			},
 		],
 	},

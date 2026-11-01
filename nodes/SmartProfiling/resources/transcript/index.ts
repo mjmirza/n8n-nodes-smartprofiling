@@ -123,7 +123,7 @@ export const transcriptDescription: INodeProperties[] = [
 					},
 				],
 				default: 'plain',
-				description: 'How to format the text output',
+				description: 'Adds a formattedText field laid out this way. Applies to the JSON format, which carries timed segments.',
 			},
 		],
 	},
