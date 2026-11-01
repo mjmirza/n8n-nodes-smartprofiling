@@ -14,7 +14,7 @@ Turn any YouTube video, channel or playlist into transcripts, summaries, chapter
 - **Summaries without watching.** Brief, detailed, bullet point or chapter summaries.
 - **Answers from a video.** Send a question and get an answer grounded in what the video actually says.
 - **Chapters and speakers.** Timestamped chapters ready for a YouTube description, and speakers labelled in interviews and podcasts.
-- **Channel intelligence.** Videos, shorts, playlists, subscriber and view counts, and growth over 7 to 365 days for any channel.
+- **Channel intelligence.** Videos, shorts, playlists, and subscriber and view counts for any channel. Growth covers 7 to 365 days of history for channels Smart Profiling already tracks. Run Get Stats first to start tracking, and history builds up one daily snapshot at a time.
 - **Signed releases.** Every version since 0.1.10 is published from GitHub Actions with npm provenance, so you can trace it to the exact commit. Earlier versions were published unsigned.
 
 ## From install to first result
@@ -33,14 +33,14 @@ Turn any YouTube video, channel or playlist into transcripts, summaries, chapter
 | Channel | Get Shorts | Lists a channel's shorts. The continuation token is not yet applied by the API, so it returns the first page |
 | Channel | Get Playlists | Lists a channel's playlists. The continuation token is not yet applied by the API, so it returns the first page |
 | Channel | Get Stats | Subscribers, views and video count, with optional AI insights |
-| Channel | Get Growth | Growth data for 7, 30, 90 or 365 days |
+| Channel | Get Growth | Growth data for 7, 30, 90 or 365 days, for channels already tracked. Run Get Stats first, history then grows daily |
 | Chapter | Generate Chapters | Timestamped chapters as JSON, YouTube description text or Markdown, with optional minimum length and maximum count |
 | Chat | Send Message | Asks a question about a video and keeps a conversation ID for follow ups |
 | Playlist | Get Videos | Lists the videos in a playlist, from an ID or a full URL, up to the Limit you set |
 | Speaker | Identify Speakers | Labels who speaks when |
 | Summarize | Generate Summary | Brief, Detailed, Bullet Points or Chapters format |
 | Transcript | Get Single | Transcript for one video as JSON, text, SRT or VTT. With JSON, a Display Format adds a Timeline, Plain, Paragraph or Sentences `formattedText` field |
-| Transcript | Get Bulk | Transcripts for several videos as one result, sent in batches of 20 |
+| Transcript | Get Bulk | Transcripts for several videos as one result, sent in batches of 5, the smallest per-request limit of any plan |
 
 Every operation supports n8n's **Continue On Fail**, and failed items keep the HTTP status code. Rate limits are retried with backoff and honor the API's Retry-After header. If the API asks for a wait longer than two minutes, the node stops and reports it rather than waiting. Server errors are retried only on calls that do not use credits, so a paid request is never charged twice.
 

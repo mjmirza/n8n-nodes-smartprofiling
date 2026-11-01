@@ -22,37 +22,37 @@ test('a blank bulk language is left out, as Get Single does', async () => {
 	assert.deepEqual(c2.calls[0].body.languages, ['de']);
 });
 
-test('bulk transcripts are sent in batches of 20 with a long timeout and merged', async () => {
+test('bulk transcripts are sent in batches of 5 with a long timeout and merged', async () => {
 	const c = ctx(
-		{ resource: 'transcript', operation: 'getBulk', videoIds: ids(45).join('\n'), format: 'json', language: 'en' },
-		[batchReply(20), batchReply(20), batchReply(5)],
+		{ resource: 'transcript', operation: 'getBulk', videoIds: ids(12).join('\n'), format: 'json', language: 'en' },
+		[batchReply(5), batchReply(5), batchReply(2)],
 	);
 	const out = await run(c);
-	assert.deepEqual(c.calls.map((call) => call.body.ids.length), [20, 20, 5]);
+	assert.deepEqual(c.calls.map((call) => call.body.ids.length), [5, 5, 2]);
 	assert.ok(c.calls.every((call) => call.timeout === 300000));
 	const json = out[0][0].json;
-	assert.equal(json.data.transcripts.length, 45);
-	assert.equal(json.meta.requested, 45);
-	assert.equal(json.meta.successful, 45);
-	assert.equal(json.meta.creditsUsed, 45);
+	assert.equal(json.data.transcripts.length, 12);
+	assert.equal(json.meta.requested, 12);
+	assert.equal(json.meta.successful, 12);
+	assert.equal(json.meta.creditsUsed, 12);
 	assert.equal(out[0].length, 1);
 });
 
 test('a failed later batch keeps the results already paid for and lists the rest', async () => {
 	const c = ctx(
-		{ resource: 'transcript', operation: 'getBulk', videoIds: ids(45).join('\n'), format: 'json', language: 'en' },
-		[batchReply(20), http(402, {}, { error: 'Insufficient credits' })],
+		{ resource: 'transcript', operation: 'getBulk', videoIds: ids(12).join('\n'), format: 'json', language: 'en' },
+		[batchReply(5), http(402, {}, { error: 'Insufficient credits' })],
 	);
 	const out = await run(c);
 	assert.equal(c.calls.length, 2);
 	const json = out[0][0].json;
-	assert.equal(json.data.transcripts.length, 20);
-	assert.equal(json.data.errors.length, 25);
-	assert.equal(json.data.errors.filter((e) => e.code === 'BATCH_FAILED').length, 20);
-	assert.equal(json.data.errors.filter((e) => e.code === 'NOT_PROCESSED').length, 5);
+	assert.equal(json.data.transcripts.length, 5);
+	assert.equal(json.data.errors.length, 7);
+	assert.equal(json.data.errors.filter((e) => e.code === 'BATCH_FAILED').length, 5);
+	assert.equal(json.data.errors.filter((e) => e.code === 'NOT_PROCESSED').length, 2);
 	assert.equal(json.success, false);
-	assert.equal(json.meta.requested, 45);
-	assert.equal(json.meta.failed, 25);
+	assert.equal(json.meta.requested, 12);
+	assert.equal(json.meta.failed, 7);
 });
 
 test('a failed first batch reports the API error and its status', async () => {

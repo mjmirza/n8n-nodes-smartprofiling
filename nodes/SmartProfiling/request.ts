@@ -247,8 +247,11 @@ function languagesOf(value: unknown): IDataObject {
 	return language ? { languages: [language] } : {};
 }
 
-/** Bulk transcripts are sent in batches so no request outlives its timeout while the API keeps charging. */
-export const BULK_BATCH_SIZE = 20;
+/**
+ * Bulk transcripts are sent in batches so no request outlives its timeout while the API keeps charging.
+ * Five is the smallest per-request limit of any plan (Free), so every account accepts a batch.
+ */
+export const BULK_BATCH_SIZE = 5;
 export const BULK_TIMEOUT_MS = 300_000;
 
 export function chunk<T>(list: T[], size: number): T[][] {

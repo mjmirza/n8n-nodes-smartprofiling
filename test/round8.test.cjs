@@ -17,20 +17,20 @@ const reply = (requested, successful) => ({
 
 test('a failed bulk batch keeps its HTTP status', async () => {
 	const c = ctx(
-		{ resource: 'transcript', operation: 'getBulk', videoIds: ids(40).join('\n'), format: 'json', language: 'en' },
-		[reply(20, 20), http(402, {}, { error: 'Insufficient credits' })],
+		{ resource: 'transcript', operation: 'getBulk', videoIds: ids(10).join('\n'), format: 'json', language: 'en' },
+		[reply(5, 5), http(402, {}, { error: 'Insufficient credits' })],
 	);
 	const json = (await run(c))[0][0].json;
 	assert.equal(json.meta.failedStatusCode, 402);
 	const failed = json.data.errors.filter((e) => e.code === 'BATCH_FAILED');
-	assert.equal(failed.length, 20);
+	assert.equal(failed.length, 5);
 	assert.ok(failed.every((e) => e.statusCode === 402));
 });
 
 test('with no successes at all, the failed batch status is reported, also under Continue On Fail', async () => {
 	const c = ctx(
-		{ resource: 'transcript', operation: 'getBulk', videoIds: ids(40).join('\n'), format: 'json', language: 'en' },
-		[reply(20, 0), http(402, {}, { error: 'Insufficient credits' })],
+		{ resource: 'transcript', operation: 'getBulk', videoIds: ids(10).join('\n'), format: 'json', language: 'en' },
+		[reply(5, 0), http(402, {}, { error: 'Insufficient credits' })],
 		{ continueOnFail: true },
 	);
 	const json = (await run(c))[0][0].json;

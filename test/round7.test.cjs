@@ -13,14 +13,14 @@ const reply = (count) => ({ success: true, data: { transcripts: Array(count).fil
 
 test('a batch that failed after it was sent is marked as possibly charged', async () => {
 	const c = ctx(
-		{ resource: 'transcript', operation: 'getBulk', videoIds: ids(40).join('\n'), format: 'json', language: 'en', retryOptions: { maxRetries: 0 } },
-		[reply(20), http(504, {}, { error: 'timeout' })],
+		{ resource: 'transcript', operation: 'getBulk', videoIds: ids(10).join('\n'), format: 'json', language: 'en', retryOptions: { maxRetries: 0 } },
+		[reply(5), http(504, {}, { error: 'timeout' })],
 	);
 	const json = (await run(c))[0][0].json;
 	assert.equal(json.success, false);
 	assert.equal(json.meta.failedBatches, 1);
 	const failed = json.data.errors.filter((e) => e.code === 'BATCH_FAILED');
-	assert.equal(failed.length, 20);
+	assert.equal(failed.length, 5);
 	assert.match(failed[0].error, /may have been processed and charged/);
 	assert.equal(json.data.errors.some((e) => e.code === 'NOT_PROCESSED'), false);
 });

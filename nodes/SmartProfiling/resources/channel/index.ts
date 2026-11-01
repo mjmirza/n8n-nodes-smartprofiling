@@ -19,7 +19,7 @@ export const channelDescription: INodeProperties[] = [
 				name: 'Get Growth',
 				value: 'getGrowth',
 				action: 'Get channel growth data',
-				description: 'Get historical growth data for subscribers, views, and videos over time',
+				description: 'Get growth history for subscribers, views and videos. Needs a channel already tracked by Get Stats, history builds daily.',
 			},
 			{
 				name: 'Get Playlists',
