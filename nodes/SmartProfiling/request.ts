@@ -270,8 +270,11 @@ export interface FailedBatch {
  * have been charged. Batches never sent are listed as NOT_PROCESSED and are safe to resend.
  */
 export function mergeBulk(responses: IDataObject[], failed?: FailedBatch, notSent: string[] = []): IDataObject {
-	// One complete batch is returned exactly as the API sent it, as before batching existed.
-	if (responses.length === 1 && !failed && notSent.length === 0) return responses[0];
+	// One complete batch keeps every field the API sent, plus the batch count added in 0.4.0.
+	if (responses.length === 1 && !failed && notSent.length === 0) {
+		const only = responses[0];
+		return { ...only, meta: { ...((only.meta ?? {}) as IDataObject), batches: 1 } };
+	}
 	const transcripts: unknown[] = [];
 	const errors: unknown[] = [];
 	const meta: IDataObject = { requested: 0, successful: 0, failed: 0, creditsUsed: 0 };

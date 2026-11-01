@@ -5,7 +5,7 @@
 ### Fixed
 - Get Bulk sends 5 videos per request, the smallest per-request limit of any plan. Previously batches of 20 failed with HTTP 400 on the Free plan, which allows 5.
 - With Continue On Fail, a bulk request where every video failed returns each video's reason in `data.errors` and the counts in `meta`. Previously only the summary message remained.
-- Get Bulk keeps every field the API returns in `meta`. One batch is passed through unchanged, and several batches total `cache` and `responseTime`. Previously batching dropped them.
+- Get Bulk keeps every field the API returns in `meta`. One batch keeps every API field plus `meta.batches`, and several batches total `cache` and `responseTime`. Previously batching dropped them.
 - When the first bulk batch fails, the result lists those videos as `BATCH_FAILED` and the unsent ones as `NOT_PROCESSED`, as for a later batch. The error keeps its original status.
 
 ### Removed

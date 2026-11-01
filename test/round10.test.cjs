@@ -84,7 +84,7 @@ test('a single-batch bulk response keeps every meta field the API returned', asy
 	const api = { success: true, data: { transcripts: [{}] }, meta: { requested: 1, successful: 1, failed: 0, creditsUsed: 1, cache: { hits: 1, misses: 0 }, responseTime: 120 } };
 	const c = ctx({ resource: 'transcript', operation: 'getBulk', videoIds: ids(1).join('\n'), format: 'json', language: 'en' }, api);
 	const out = await run(c);
-	assert.deepEqual(out[0][0].json, api);
+	assert.deepEqual(out[0][0].json, { ...api, meta: { ...api.meta, batches: 1 } });
 });
 
 test('a multi-batch bulk response totals cache counters and response time', async () => {
