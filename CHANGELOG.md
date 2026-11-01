@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.3.3] - 2026-11-01
+
+### Fixed
+- A version 1 playlist node that stores a Limit of 50 sends it again. 0.3.2 dropped it and returned up to 200 videos. The n8n editor never stores the default, so only an explicitly written 50 is affected. The reasoning and evidence are in docs/DESIGN-DECISIONS.md.
+- The README example workflows add the Split Out step on `data.videos`. Previously the next node ran once for the whole list instead of once per video.
+
 ## [0.3.2] - 2026-11-01
 
 ### Fixed

@@ -8,14 +8,24 @@ const { ctx, http } = require('./fake-n8n.cjs');
 
 const run = (c) => new SmartProfiling().execute.call(c);
 
-test('a version 1 node saved with the default limit keeps the 0.1.x request', async () => {
+test('a version 1 node that stores no limit keeps the 0.1.x request', async () => {
+	const c = ctx(
+		{ resource: 'playlist', operation: 'getVideos', playlistId: 'PL1', limit: 50 },
+		{ success: true, data: {} },
+		{ typeVersion: 1, savedParameters: {} },
+	);
+	await run(c);
+	assert.deepEqual(c.calls[0].qs, { id: 'PL1' });
+});
+
+test('a version 1 node that stores limit 50 explicitly sends it', async () => {
 	const c = ctx(
 		{ resource: 'playlist', operation: 'getVideos', playlistId: 'PL1', limit: 50 },
 		{ success: true, data: {} },
 		{ typeVersion: 1, savedParameters: { limit: 50 } },
 	);
 	await run(c);
-	assert.deepEqual(c.calls[0].qs, { id: 'PL1' });
+	assert.deepEqual(c.calls[0].qs, { id: 'PL1', limit: 50 });
 });
 
 test('a version 1 node with an explicit non-default limit sends it', async () => {
@@ -78,4 +88,14 @@ test('a Retry-After beyond the wait budget is not shortened, the node stops inst
 	const err = await run(c).catch((e) => e);
 	assert.equal(c.calls.length, 1);
 	assert.match(String(err.message), /Retry-After/);
+});
+
+test('the n8n save path never stores the default playlist limit', () => {
+	const { NodeHelpers } = require('n8n-workflow');
+	const node = new SmartProfiling();
+	const base = { resource: 'playlist', operation: 'getVideos', playlistId: 'PL1' };
+	const saved = (limit) =>
+		NodeHelpers.getNodeParameters(node.description.properties, { ...base, limit }, false, false, null) ?? {};
+	assert.equal(saved(50).limit, undefined);
+	assert.equal(saved(5).limit, 5);
 });
