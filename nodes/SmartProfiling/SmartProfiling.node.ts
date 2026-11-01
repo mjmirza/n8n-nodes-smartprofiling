@@ -163,14 +163,6 @@ export class SmartProfiling implements INodeType {
 			throw new NodeOperationError(this.getNode(), error as Error);
 		}
 
-		const retryOptions = this.getNodeParameter('retryOptions', 0, {}) as {
-			maxRetries?: number;
-			initialDelay?: number;
-		};
-		// The UI bounds are not enforced for expressions, so they are applied here.
-		const maxRetries = boundedInteger(retryOptions.maxRetries, 0, 10, RETRY_CONFIG.maxRetries);
-		const initialDelay = boundedInteger(retryOptions.initialDelay, 100, 30000, RETRY_CONFIG.initialDelayMs);
-
 		// AI operations need a longer timeout.
 		const isAiOperation = ['summarize', 'chat', 'speakers', 'chapters'].includes(resource);
 		const timeout = isAiOperation ? 120000 : 30000;
@@ -178,6 +170,13 @@ export class SmartProfiling implements INodeType {
 		for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
 			try {
 				const operation = this.getNodeParameter('operation', itemIndex) as string;
+				// Read per item, since an expression can differ between items. The UI bounds are not enforced for expressions.
+				const retryOptions = this.getNodeParameter('retryOptions', itemIndex, {}) as {
+					maxRetries?: number;
+					initialDelay?: number;
+				};
+				const maxRetries = boundedInteger(retryOptions.maxRetries, 0, 10, RETRY_CONFIG.maxRetries);
+				const initialDelay = boundedInteger(retryOptions.initialDelay, 100, 30000, RETRY_CONFIG.initialDelayMs);
 				const request = buildRequest(
 					resource,
 					operation,
@@ -249,6 +248,7 @@ export class SmartProfiling implements INodeType {
 				};
 
 				let response: unknown;
+				let bulkFailure: unknown;
 				const ids = request.body.ids;
 				if (request.method === 'POST' && request.endpoint === '/api/v1/transcripts' && Array.isArray(ids)) {
 					if (ids.length === 0) {
@@ -269,7 +269,8 @@ export class SmartProfiling implements INodeType {
 						if (batchError === undefined) continue;
 						// Nothing received yet, so the original error with its status code is the clearest report.
 						if (done.length === 0) throw new NodeApiError(this.getNode(), batchError as JsonObject, { itemIndex });
-						failed = { ids: batches[b], message: (batchError as Error).message };
+						failed = { ids: batches[b], message: (batchError as Error).message, statusCode: statusOf(batchError) };
+						bulkFailure = batchError;
 						next = b + 1;
 						break;
 					}
@@ -288,6 +289,8 @@ export class SmartProfiling implements INodeType {
 				}
 				const meta = (responseData as IDataObject | null)?.meta as IDataObject | undefined;
 				if (request.method === 'POST' && request.endpoint === '/api/v1/transcripts' && meta?.successful === 0 && Number(meta.requested) > 0) {
+					// A failed batch carries the real status, such as 402 or 429, so report that rather than a generic error.
+					if (bulkFailure !== undefined) throw new NodeApiError(this.getNode(), bulkFailure as JsonObject, { itemIndex });
 					throw new NodeOperationError(this.getNode(), `None of the ${meta.requested} transcripts could be retrieved`, {
 						itemIndex,
 						description: JSON.stringify((responseData as IDataObject).data ?? {}),

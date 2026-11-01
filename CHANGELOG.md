@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.2] - 2026-11-01
+
+### Fixed
+- A failed Get Bulk batch keeps its HTTP status, on each `BATCH_FAILED` entry and as `meta.failedStatusCode`. When no transcript succeeded at all, the error is the failed batch's own API error with its status code, so Continue On Fail reports 402 or 429 instead of a generic message.
+- Retry settings are read for each item, so an expression that differs between items applies to each one. Previously every item used the first item's settings.
+- Publishing runs the behavior tests on Node 20, 22 and 24 before anything is published. Previously only the CI workflow did, and it does not run on version tags.
+- The README links the design note with an absolute URL, which also works on the npm page, and states that development needs Node 24.
+
 ## [0.4.1] - 2026-11-01
 
 ### Fixed

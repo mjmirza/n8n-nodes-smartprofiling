@@ -48,7 +48,7 @@ Each request returns one item. List operations keep their results in `data.video
 
 Summary Length, Custom Prompt, Max Speakers, and the chat Max Tokens and Temperature are sent with the request but not yet applied by the API.
 
-New nodes use version 1.1, which always sends the playlist Limit. A version 1 node sends the Limit when the saved workflow stores a value for it, and otherwise gets the API default of 200 videos. See [docs/DESIGN-DECISIONS.md](docs/DESIGN-DECISIONS.md).
+New nodes use version 1.1, which always sends the playlist Limit. A version 1 node sends the Limit when the saved workflow stores a value for it, and otherwise gets the API default of 200 videos. See [DESIGN-DECISIONS.md](https://github.com/mjmirza/n8n-nodes-smartprofiling/blob/main/docs/DESIGN-DECISIONS.md).
 
 ### Example workflows
 
@@ -86,7 +86,7 @@ The credential is tested on save with a request that uses no credits, so a wrong
 | Language | TypeScript, built with `@n8n/node-cli` |
 | Runtime dependencies | None. Only `n8n-workflow` as a peer |
 | Lint | n8n community node rules, the same set n8n uses to verify packages |
-| Node.js | 22 or newer for development |
+| Node.js | 24 or newer for development, the n8n build tools need it. The published node runs on 20.19 or newer |
 
 ```bash
 npm ci
