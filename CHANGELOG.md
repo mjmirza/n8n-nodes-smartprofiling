@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.4.0] - 2026-11-01
+
+### Fixed
+- Get Bulk leaves out a blank Language, so the API default applies as it does for Get Single. Previously it sent `languages: [""]`, which the API rejects.
+- Get Bulk sends the videos in batches of 20, each with a 5 minute timeout, and merges the results into one item. If a later batch fails, the transcripts already received and charged are kept and the remaining videos are listed in `data.errors` with code `NOT_PROCESSED`. Previously one request carried every video with a 30 second timeout, so a large batch could time out while the API kept processing and charging.
+
+### Changed
+- docs/DESIGN-DECISIONS.md lists how each release treated the version 1 playlist Limit and why 0.1.x behavior is kept. A workflow built on 0.2.0 that relied on the default of 50 should set the Limit explicitly.
+
 ## [0.3.3] - 2026-11-01
 
 ### Fixed

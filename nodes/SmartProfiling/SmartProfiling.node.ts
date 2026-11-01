@@ -19,6 +19,10 @@ import {
 	applyDisplayFormat,
 	buildRequest,
 	isRetryable,
+	BULK_BATCH_SIZE,
+	BULK_TIMEOUT_MS,
+	chunk,
+	mergeBulk,
 	MAX_RETRY_WAIT_MS,
 	normalizeBaseUrl,
 	retryAfterOf,
@@ -198,47 +202,74 @@ export class SmartProfiling implements INodeType {
 					requestOptions.body = request.body;
 				}
 
-				let response: unknown;
-				for (let attempt = 0; ; attempt++) {
-					let failure: unknown;
-					try {
-						const full = (await this.helpers.httpRequestWithAuthentication.call(
-							this,
-							'smartProfilingApi',
-							requestOptions,
-						)) as { statusCode?: number; headers?: IDataObject; body?: unknown };
-						const status = Number(full?.statusCode ?? 200);
-						if (status < 400) {
-							response = full?.body;
-							break;
+				const send = async (options: IHttpRequestOptions): Promise<unknown> => {
+					for (let attempt = 0; ; attempt++) {
+						let failure: unknown;
+						try {
+							const full = (await this.helpers.httpRequestWithAuthentication.call(
+								this,
+								'smartProfilingApi',
+								options,
+							)) as { statusCode?: number; headers?: IDataObject; body?: unknown };
+							const status = Number(full?.statusCode ?? 200);
+							if (status < 400) {
+								return full?.body;
+							}
+							failure = new HttpStatusError(status, full?.headers, full?.body);
+						} catch (error) {
+							failure = error;
 						}
-						failure = new HttpStatusError(status, full?.headers, full?.body);
-					} catch (error) {
-						failure = error;
-					}
 
-					const statusCode = statusOf(failure);
-					let waitNote = '';
-					const retryable = attempt < maxRetries && isRetryable(statusCode, request.billable);
-					const delay = retryable ? retryDelayMs(attempt, initialDelay, retryAfterOf(failure)) : 0;
-					if (delay > MAX_RETRY_WAIT_MS) {
-						waitNote = ` The API asked to wait ${Math.ceil(delay / 1000)} seconds (Retry-After), longer than this node waits.`;
-					} else if (retryable) {
-						this.logger.warn(
-							`Request failed with status ${statusCode}, retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries})`,
-						);
-						await sleep(delay);
-						continue;
+						const statusCode = statusOf(failure);
+						let waitNote = '';
+						const retryable = attempt < maxRetries && isRetryable(statusCode, request.billable);
+						const delay = retryable ? retryDelayMs(attempt, initialDelay, retryAfterOf(failure)) : 0;
+						if (delay > MAX_RETRY_WAIT_MS) {
+							waitNote = ` The API asked to wait ${Math.ceil(delay / 1000)} seconds (Retry-After), longer than this node waits.`;
+						} else if (retryable) {
+							this.logger.warn(
+								`Request failed with status ${statusCode}, retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries})`,
+							);
+							await sleep(delay);
+							continue;
+						}
+						if (failure instanceof HttpStatusError) {
+							const body = failure.body && typeof failure.body === 'object' ? failure.body : { message: String(failure.body ?? '') };
+							throw new NodeApiError(this.getNode(), body as JsonObject, {
+								itemIndex,
+								httpCode: String(failure.status),
+								message: apiErrorMessage(failure.body, failure.status) + waitNote,
+							});
+						}
+						throw new NodeApiError(this.getNode(), failure as JsonObject, { itemIndex });
 					}
-					if (failure instanceof HttpStatusError) {
-						const body = failure.body && typeof failure.body === 'object' ? failure.body : { message: String(failure.body ?? '') };
-						throw new NodeApiError(this.getNode(), body as JsonObject, {
-							itemIndex,
-							httpCode: String(failure.status),
-							message: apiErrorMessage(failure.body, failure.status) + waitNote,
-						});
+				};
+
+				let response: unknown;
+				const ids = request.body.ids;
+				if (request.method === 'POST' && request.endpoint === '/api/v1/transcripts' && Array.isArray(ids)) {
+					const batches = chunk(ids as string[], BULK_BATCH_SIZE);
+					const done: IDataObject[] = [];
+					let reason = '';
+					let stoppedAt = batches.length;
+					for (let b = 0; b < batches.length; b++) {
+						let batchError: unknown;
+						try {
+							const part = await send({ ...requestOptions, timeout: BULK_TIMEOUT_MS, body: { ...request.body, ids: batches[b] } });
+							done.push((typeof part === 'string' ? JSON.parse(part) : part) as IDataObject);
+						} catch (error) {
+							batchError = error;
+						}
+						if (batchError === undefined) continue;
+						// Nothing received yet, so the original error with its status code is the clearest report.
+						if (done.length === 0) throw new NodeApiError(this.getNode(), batchError as JsonObject, { itemIndex });
+						reason = `Not processed, an earlier batch failed: ${(batchError as Error).message}`;
+						stoppedAt = b;
+						break;
 					}
-					throw new NodeApiError(this.getNode(), failure as JsonObject, { itemIndex });
+					response = mergeBulk(done, batches.slice(stoppedAt).flat(), reason);
+				} else {
+					response = await send(requestOptions);
 				}
 
 				let responseData: unknown = response;
