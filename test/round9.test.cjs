@@ -40,3 +40,8 @@ test('the README scopes the provenance claim to versions since 0.1.10', () => {
 	const readme = fs.readFileSync(path.join(__dirname, '..', 'README.md'), 'utf8');
 	assert.match(readme, /Every version since 0\.1\.10/);
 });
+
+test('the accepted credential-test exception is documented', () => {
+	const note = fs.readFileSync(path.join(__dirname, '..', 'docs', 'DESIGN-DECISIONS.md'), 'utf8');
+	assert.match(note, /Accepted by owner, blocked by a local file-protection policy/);
+});
