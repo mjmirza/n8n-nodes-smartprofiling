@@ -19,6 +19,7 @@ import {
 	applyDisplayFormat,
 	buildRequest,
 	isRetryable,
+	MAX_RETRY_WAIT_MS,
 	normalizeBaseUrl,
 	retryAfterOf,
 	apiErrorMessage,
@@ -217,8 +218,12 @@ export class SmartProfiling implements INodeType {
 					}
 
 					const statusCode = statusOf(failure);
-					if (attempt < maxRetries && isRetryable(statusCode, request.billable)) {
-						const delay = retryDelayMs(attempt, initialDelay, retryAfterOf(failure));
+					let waitNote = '';
+					const retryable = attempt < maxRetries && isRetryable(statusCode, request.billable);
+					const delay = retryable ? retryDelayMs(attempt, initialDelay, retryAfterOf(failure)) : 0;
+					if (delay > MAX_RETRY_WAIT_MS) {
+						waitNote = ` The API asked to wait ${Math.ceil(delay / 1000)} seconds (Retry-After), longer than this node waits.`;
+					} else if (retryable) {
 						this.logger.warn(
 							`Request failed with status ${statusCode}, retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries})`,
 						);
@@ -230,7 +235,7 @@ export class SmartProfiling implements INodeType {
 						throw new NodeApiError(this.getNode(), body as JsonObject, {
 							itemIndex,
 							httpCode: String(failure.status),
-							message: apiErrorMessage(failure.body, failure.status),
+							message: apiErrorMessage(failure.body, failure.status) + waitNote,
 						});
 					}
 					throw new NodeApiError(this.getNode(), failure as JsonObject, { itemIndex });
@@ -243,6 +248,13 @@ export class SmartProfiling implements INodeType {
 					} catch {
 						responseData = { data: response };
 					}
+				}
+				const meta = (responseData as IDataObject | null)?.meta as IDataObject | undefined;
+				if (request.method === 'POST' && request.endpoint === '/api/v1/transcripts' && meta?.successful === 0 && Number(meta.requested) > 0) {
+					throw new NodeOperationError(this.getNode(), `None of the ${meta.requested} transcripts could be retrieved`, {
+						itemIndex,
+						description: JSON.stringify((responseData as IDataObject).data ?? {}),
+					});
 				}
 				responseData = applyDisplayFormat(responseData, request.displayFormat);
 				if (responseData === null || typeof responseData !== 'object' || Array.isArray(responseData)) {

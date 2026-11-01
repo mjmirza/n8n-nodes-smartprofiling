@@ -101,7 +101,7 @@ export function buildRequest(
 		if (operation === 'getBulk') {
 			const ids = String(get('videoIds') ?? '')
 				.split('\n')
-				.map((id) => id.trim())
+				.map((id) => normalizeVideoId(id))
 				.filter((id) => id);
 			return {
 				method: 'POST',
@@ -115,7 +115,7 @@ export function buildRequest(
 		return {
 			method: 'GET',
 			endpoint: '/api/v1/transcripts',
-			qs: { id: get('videoId'), format: get('format'), language: get('language') },
+			qs: { id: videoIdOf(get('videoId')), format: get('format'), language: get('language') },
 			body: {},
 			billable: true,
 			displayFormat,
@@ -124,7 +124,7 @@ export function buildRequest(
 
 	if (resource === 'summarize') {
 		const body: IDataObject = {
-			videoId: get('videoId'),
+			videoId: videoIdOf(get('videoId')),
 			format: get('summaryFormat'),
 			length: get('summaryLength'),
 		};
@@ -135,7 +135,7 @@ export function buildRequest(
 	}
 
 	if (resource === 'chat') {
-		const body: IDataObject = { videoId: get('videoId'), message: get('message') };
+		const body: IDataObject = { videoId: videoIdOf(get('videoId')), message: get('message') };
 		const conversationId = get('conversationId', '');
 		if (typeof conversationId === 'string' && conversationId.trim()) {
 			body.conversationId = conversationId.trim();
@@ -147,7 +147,7 @@ export function buildRequest(
 	}
 
 	if (resource === 'chapters') {
-		const body: IDataObject = { videoId: get('videoId'), format: get('chapterFormat') };
+		const body: IDataObject = { videoId: videoIdOf(get('videoId')), format: get('chapterFormat') };
 		const options = (get('additionalOptions', {}) as IDataObject) ?? {};
 		const chapterOptions: IDataObject = {};
 		if (typeof options.minChapterDuration === 'number') chapterOptions.minChapterLength = options.minChapterDuration;
@@ -157,7 +157,7 @@ export function buildRequest(
 	}
 
 	if (resource === 'speakers') {
-		const body: IDataObject = { videoId: get('videoId') };
+		const body: IDataObject = { videoId: videoIdOf(get('videoId')) };
 		const options = (get('additionalOptions', {}) as IDataObject) ?? {};
 		if (typeof options.maxSpeakers === 'number') body.maxSpeakers = options.maxSpeakers;
 		return { method: 'POST', endpoint: '/api/v1/speakers', qs: {}, body, billable: true };
@@ -200,9 +200,11 @@ export function buildRequest(
 		const input = String(get('playlistId') ?? '').trim();
 		// The API reads a full URL from `url` and a bare ID from `id`.
 		const qs: IDataObject = /^https?:\/\//i.test(input) ? { url: input } : { id: input };
-		// Version 1 sends the limit only when the workflow saved one, which 0.2.0 honored. An unsaved default keeps the API default of 200 as 0.1.x did.
+		// Version 1 keeps the 0.1.x request, the API default of 200, unless the user set their own Limit.
 		const limit = get('limit', 50);
-		const send = typeVersion >= 1.1 || savedParameters.limit !== undefined;
+		// A saved 50 is the default, which the n8n UI never saves, so only a different value is the user's explicit Limit.
+		const saved = savedParameters.limit;
+		const send = typeVersion >= 1.1 || (saved !== undefined && saved !== 50);
 		if (send && typeof limit === 'number' && Number.isFinite(limit)) qs.limit = limit;
 		return { method: 'GET', endpoint: '/api/v1/playlists', qs, body: {}, billable: true };
 	}
@@ -217,14 +219,42 @@ export function isRetryable(statusCode: number | undefined, billable: boolean): 
 	return statusCode !== undefined && [408, 500, 502, 503, 504].includes(statusCode);
 }
 
+/** Longest wait the node sleeps through. A longer Retry-After stops the retries instead. */
+export const MAX_RETRY_WAIT_MS = 120_000;
+
+const VIDEO_ID = /^[A-Za-z0-9_-]{11}$/;
+
+/** Reduce a YouTube watch, youtu.be, shorts, live or embed URL to its video ID. Anything else is returned trimmed. */
+export function normalizeVideoId(input: unknown): string {
+	const text = String(input ?? '').trim();
+	if (VIDEO_ID.test(text) || !/^https?:\/\//i.test(text)) return text;
+	try {
+		const url = new URL(text);
+		const host = url.hostname.replace(/^(www|m|music)\./, '');
+		let id: string | null = null;
+		if (host === 'youtu.be') id = url.pathname.split('/')[1] ?? null;
+		else if (host === 'youtube.com' || host === 'youtube-nocookie.com') {
+			const [, kind, value] = url.pathname.split('/');
+			id = kind === 'watch' ? url.searchParams.get('v') : ['shorts', 'live', 'embed', 'v'].includes(kind) ? value : null;
+		}
+		return id && VIDEO_ID.test(id) ? id : text;
+	} catch {
+		return text;
+	}
+}
+
+function videoIdOf(value: unknown): string {
+	return normalizeVideoId(value);
+}
+
 /** Delay before retry `attempt` (0-based), honoring a Retry-After header in seconds or as a date. */
 export function retryDelayMs(attempt: number, initialDelayMs: number, retryAfter?: unknown, now = Date.now()): number {
 	const header = Array.isArray(retryAfter) ? retryAfter[0] : retryAfter;
 	if (header !== undefined && header !== null && header !== '') {
 		const seconds = Number(header);
-		if (Number.isFinite(seconds) && seconds >= 0) return Math.min(seconds * 1000, 120_000);
+		if (Number.isFinite(seconds) && seconds >= 0) return seconds * 1000;
 		const date = Date.parse(String(header));
-		if (Number.isFinite(date)) return Math.min(Math.max(date - now, 0), 120_000);
+		if (Number.isFinite(date)) return Math.max(date - now, 0);
 	}
 	return Math.min(initialDelayMs * Math.pow(2, attempt), 30_000);
 }

@@ -42,7 +42,7 @@ Turn any YouTube video, channel or playlist into transcripts, summaries, chapter
 | Transcript | Get Single | Transcript for one video as JSON, text, SRT or VTT. With JSON, a Display Format adds a Timeline, Plain, Paragraph or Sentences `formattedText` field |
 | Transcript | Get Bulk | Transcripts for several videos in one request |
 
-Every operation supports n8n's **Continue On Fail**, and failed items keep the HTTP status code. Rate limits are retried with backoff and honor the API's Retry-After header. Server errors are retried only on calls that do not use credits, so a paid request is never charged twice.
+Every operation supports n8n's **Continue On Fail**, and failed items keep the HTTP status code. Rate limits are retried with backoff and honor the API's Retry-After header. If the API asks for a wait longer than two minutes, the node stops and reports it rather than waiting. Server errors are retried only on calls that do not use credits, so a paid request is never charged twice.
 
 Summary Length, Custom Prompt, Max Speakers, and the chat Max Tokens and Temperature are sent with the request but not yet applied by the API.
 
@@ -66,7 +66,7 @@ Bulk transcript export:
 | API Key | Your key from the Smart Profiling dashboard |
 | Base URL | Leave the default unless you were given a dedicated domain. Must be https on smartprofiling.com or one of its subdomains |
 
-The credential is tested on save with a request that uses no credits, so a wrong key shows up immediately. API documentation is at [smartprofiling.com/api-docs](https://smartprofiling.com/api-docs).
+The credential is tested on save with a request that uses no credits, so a wrong key shows up immediately. The API also rejects a key whose account has no credits left, so top up before testing a new account. API documentation is at [smartprofiling.com/api-docs](https://smartprofiling.com/api-docs).
 
 ## Troubleshooting
 

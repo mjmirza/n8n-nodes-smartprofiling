@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.3.2] - 2026-11-01
+
+### Fixed
+- A version 1 playlist node saved with the default Limit of 50 no longer sends it, matching 0.1.x. Only a Limit the user changed is sent. Previously 0.3.1 sent 50 and cut results that used to return up to 200.
+- A bulk transcript request where every video failed is an error. Previously the API's 200 response with zero transcripts looked like success.
+- Video ID fields accept YouTube watch, youtu.be, Shorts, Live and embed URLs and send the bare ID.
+- A Retry-After longer than two minutes is no longer cut short. The node stops and names the wait instead of retrying too early.
+
+### Corrected
+- The 0.2.0 note that the credential test works for accounts with zero credits was wrong. The API rejects a key with no credits left, and the README now says so.
+
 ## [0.3.1] - 2026-11-01
 
 ### Fixed
