@@ -40,7 +40,7 @@ Turn any YouTube video, channel or playlist into transcripts, summaries, chapter
 | Speaker | Identify Speakers | Labels who speaks when |
 | Summarize | Generate Summary | Brief, Detailed, Bullet Points or Chapters format |
 | Transcript | Get Single | Transcript for one video as JSON, text, SRT or VTT. With JSON, a Display Format adds a Timeline, Plain, Paragraph or Sentences `formattedText` field |
-| Transcript | Get Bulk | Transcripts for several videos in one request |
+| Transcript | Get Bulk | Transcripts for several videos as one result, sent in batches of 20 |
 
 Every operation supports n8n's **Continue On Fail**, and failed items keep the HTTP status code. Rate limits are retried with backoff and honor the API's Retry-After header. If the API asks for a wait longer than two minutes, the node stops and reports it rather than waiting. Server errors are retried only on calls that do not use credits, so a paid request is never charged twice.
 

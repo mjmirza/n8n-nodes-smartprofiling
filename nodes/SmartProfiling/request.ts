@@ -107,7 +107,7 @@ export function buildRequest(
 				method: 'POST',
 				endpoint: '/api/v1/transcripts',
 				qs: {},
-				body: { ids, format: get('format'), languages: [get('language')] },
+				body: { ids, format: get('format'), ...languagesOf(get('language')) },
 				billable: true,
 				displayFormat,
 			};
@@ -239,6 +239,42 @@ export function normalizeVideoId(input: unknown): string {
 	} catch {
 		return text;
 	}
+}
+
+/** A blank Language is left out, so the API default applies, as Get Single does. */
+function languagesOf(value: unknown): IDataObject {
+	const language = String(value ?? '').trim();
+	return language ? { languages: [language] } : {};
+}
+
+/** Bulk transcripts are sent in batches so no request outlives its timeout while the API keeps charging. */
+export const BULK_BATCH_SIZE = 20;
+export const BULK_TIMEOUT_MS = 300_000;
+
+export function chunk<T>(list: T[], size: number): T[][] {
+	const out: T[][] = [];
+	for (let i = 0; i < list.length; i += size) out.push(list.slice(i, i + size));
+	return out;
+}
+
+/** Combine the batch responses into one Get Bulk result. IDs whose batch never ran are listed in errors. */
+export function mergeBulk(responses: IDataObject[], notProcessed: string[], reason: string): IDataObject {
+	const transcripts: unknown[] = [];
+	const errors: unknown[] = [];
+	const meta: IDataObject = { requested: 0, successful: 0, failed: 0, creditsUsed: 0 };
+	for (const response of responses) {
+		const data = (response.data ?? {}) as IDataObject;
+		if (Array.isArray(data.transcripts)) transcripts.push(...data.transcripts);
+		if (Array.isArray(data.errors)) errors.push(...data.errors);
+		const part = (response.meta ?? {}) as IDataObject;
+		for (const key of ['requested', 'successful', 'failed', 'creditsUsed']) meta[key] = Number(meta[key]) + (Number(part[key]) || 0);
+		if (part.creditsRemaining !== undefined) meta.creditsRemaining = part.creditsRemaining;
+	}
+	for (const videoId of notProcessed) errors.push({ videoId, error: reason, code: 'NOT_PROCESSED' });
+	meta.requested = Number(meta.requested) + notProcessed.length;
+	meta.failed = Number(meta.failed) + notProcessed.length;
+	meta.batches = responses.length;
+	return { success: true, data: { transcripts, ...(errors.length ? { errors } : {}) }, meta };
 }
 
 function videoIdOf(value: unknown): string {
