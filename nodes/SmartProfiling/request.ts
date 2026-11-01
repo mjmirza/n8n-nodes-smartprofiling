@@ -261,6 +261,7 @@ export function chunk<T>(list: T[], size: number): T[][] {
 export interface FailedBatch {
 	ids: string[];
 	message: string;
+	statusCode?: number;
 }
 
 /**
@@ -285,6 +286,7 @@ export function mergeBulk(responses: IDataObject[], failed?: FailedBatch, notSen
 			videoId,
 			error: `The request for this batch failed: ${failed?.message}. It may have been processed and charged, so check your usage before retrying it.`,
 			code: 'BATCH_FAILED',
+			...(failed?.statusCode !== undefined ? { statusCode: failed.statusCode } : {}),
 		});
 	}
 	for (const videoId of notSent) {
@@ -294,7 +296,10 @@ export function mergeBulk(responses: IDataObject[], failed?: FailedBatch, notSen
 	meta.requested = Number(meta.requested) + unresolved;
 	meta.failed = Number(meta.failed) + unresolved;
 	meta.batches = responses.length + (failed ? 1 : 0);
-	if (failed) meta.failedBatches = 1;
+	if (failed) {
+		meta.failedBatches = 1;
+		if (failed.statusCode !== undefined) meta.failedStatusCode = failed.statusCode;
+	}
 	return { success: !failed, data: { transcripts, ...(errors.length ? { errors } : {}) }, meta };
 }
 
