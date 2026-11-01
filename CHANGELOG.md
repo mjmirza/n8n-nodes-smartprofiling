@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.4.1] - 2026-11-01
+
+### Fixed
+- A Get Bulk batch that failed after it was sent is listed as `BATCH_FAILED`, with a note that it may have been processed and charged, and the result reports `success: false`. Only batches never sent are `NOT_PROCESSED`. Previously 0.4.0 marked the failed batch as safe to retry.
+- Retry settings set by an expression are bounded to the field limits (0 to 10 retries, 100 to 30000 ms). Previously an expression such as `{{ 1/0 }}` retried without end.
+- Get Bulk with no video IDs fails before sending anything. Previously 0.4.0 returned an empty success.
+- docs/DESIGN-DECISIONS.md gives a working way to restore the old default Limit of 50 on a version 1 node.
+
+### Changed
+- The minimum Node.js version is 20.19, the lowest that n8n 1.x supports. CI tests Node 20, 22 and 24. Previously the package claimed Node 18, which CI never tested.
+
 ## [0.4.0] - 2026-11-01
 
 ### Fixed
@@ -7,7 +18,7 @@
 - Get Bulk sends the videos in batches of 20, each with a 5 minute timeout, and merges the results into one item. If a later batch fails, the transcripts already received and charged are kept and the remaining videos are listed in `data.errors` with code `NOT_PROCESSED`. Previously one request carried every video with a 30 second timeout, so a large batch could time out while the API kept processing and charging.
 
 ### Changed
-- docs/DESIGN-DECISIONS.md lists how each release treated the version 1 playlist Limit and why 0.1.x behavior is kept. A workflow built on 0.2.0 that relied on the default of 50 should set the Limit explicitly.
+- docs/DESIGN-DECISIONS.md lists how each release treated the version 1 playlist Limit and why 0.1.x behavior is kept. A workflow built on 0.2.0 that relied on the default of 50 should enter the Limit as the expression `{{ 50 }}` or use a new node.
 
 ## [0.3.3] - 2026-11-01
 

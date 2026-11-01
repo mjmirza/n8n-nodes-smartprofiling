@@ -23,6 +23,8 @@ import {
 	BULK_TIMEOUT_MS,
 	chunk,
 	mergeBulk,
+	boundedInteger,
+	type FailedBatch,
 	MAX_RETRY_WAIT_MS,
 	normalizeBaseUrl,
 	retryAfterOf,
@@ -165,8 +167,9 @@ export class SmartProfiling implements INodeType {
 			maxRetries?: number;
 			initialDelay?: number;
 		};
-		const maxRetries = retryOptions.maxRetries ?? RETRY_CONFIG.maxRetries;
-		const initialDelay = retryOptions.initialDelay ?? RETRY_CONFIG.initialDelayMs;
+		// The UI bounds are not enforced for expressions, so they are applied here.
+		const maxRetries = boundedInteger(retryOptions.maxRetries, 0, 10, RETRY_CONFIG.maxRetries);
+		const initialDelay = boundedInteger(retryOptions.initialDelay, 100, 30000, RETRY_CONFIG.initialDelayMs);
 
 		// AI operations need a longer timeout.
 		const isAiOperation = ['summarize', 'chat', 'speakers', 'chapters'].includes(resource);
@@ -248,10 +251,13 @@ export class SmartProfiling implements INodeType {
 				let response: unknown;
 				const ids = request.body.ids;
 				if (request.method === 'POST' && request.endpoint === '/api/v1/transcripts' && Array.isArray(ids)) {
+					if (ids.length === 0) {
+						throw new NodeOperationError(this.getNode(), 'Video IDs is empty. Enter at least one video ID or URL, one per line.', { itemIndex });
+					}
 					const batches = chunk(ids as string[], BULK_BATCH_SIZE);
 					const done: IDataObject[] = [];
-					let reason = '';
-					let stoppedAt = batches.length;
+					let failed: FailedBatch | undefined;
+					let next = batches.length;
 					for (let b = 0; b < batches.length; b++) {
 						let batchError: unknown;
 						try {
@@ -263,11 +269,11 @@ export class SmartProfiling implements INodeType {
 						if (batchError === undefined) continue;
 						// Nothing received yet, so the original error with its status code is the clearest report.
 						if (done.length === 0) throw new NodeApiError(this.getNode(), batchError as JsonObject, { itemIndex });
-						reason = `Not processed, an earlier batch failed: ${(batchError as Error).message}`;
-						stoppedAt = b;
+						failed = { ids: batches[b], message: (batchError as Error).message };
+						next = b + 1;
 						break;
 					}
-					response = mergeBulk(done, batches.slice(stoppedAt).flat(), reason);
+					response = mergeBulk(done, failed, batches.slice(next).flat());
 				} else {
 					response = await send(requestOptions);
 				}

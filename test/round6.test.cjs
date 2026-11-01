@@ -48,7 +48,9 @@ test('a failed later batch keeps the results already paid for and lists the rest
 	const json = out[0][0].json;
 	assert.equal(json.data.transcripts.length, 20);
 	assert.equal(json.data.errors.length, 25);
-	assert.equal(json.data.errors[0].code, 'NOT_PROCESSED');
+	assert.equal(json.data.errors.filter((e) => e.code === 'BATCH_FAILED').length, 20);
+	assert.equal(json.data.errors.filter((e) => e.code === 'NOT_PROCESSED').length, 5);
+	assert.equal(json.success, false);
 	assert.equal(json.meta.requested, 45);
 	assert.equal(json.meta.failed, 25);
 });

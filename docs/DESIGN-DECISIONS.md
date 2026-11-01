@@ -17,7 +17,7 @@ The node therefore cannot match both 0.1.x and 0.2.0 for a node with no stored l
 - 0.2.0 was the latest version for 37 minutes, from 2026-11-01 10:32 UTC (published) to 11:09 UTC (0.3.0 published), per `npm view n8n-nodes-smartprofiling time`.
 - A stored limit is a value a person chose in the editor, so it is sent. 0.1.x ignoring it was the bug 0.2.0 fixed.
 
-A workflow built on 0.2.0 that relied on the default of 50 gets it back by setting the Limit to 50 in the editor, or by replacing the node with a new one, which uses version 1.1 and always sends the Limit.
+A workflow built on 0.2.0 that relied on the default of 50 gets it back in one of two ways. Enter the Limit as the expression `{{ 50 }}`, which n8n stores because it differs from the default, or replace the node with a new one, which uses version 1.1 and always sends the Limit. Typing 50 as a plain number does not work, because the editor drops a value equal to the default. `test/round7.test.cjs` checks the expression route through n8n's own save function.
 
 **Evidence that the editor never stores the default.**
 - n8n saves node parameters through `NodeHelpers.getNodeParameters(properties, parameters, returnDefaults = false, ...)` in `packages/frontend/editor-ui/src/app/utils/nodes/nodeTransforms.ts` (n8n-io/n8n master, commit f5ed6cc72cdc, lines 229 to 236). With `returnDefaults` false, a parameter equal to its default is dropped.

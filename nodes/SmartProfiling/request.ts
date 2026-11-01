@@ -257,8 +257,17 @@ export function chunk<T>(list: T[], size: number): T[][] {
 	return out;
 }
 
-/** Combine the batch responses into one Get Bulk result. IDs whose batch never ran are listed in errors. */
-export function mergeBulk(responses: IDataObject[], notProcessed: string[], reason: string): IDataObject {
+/** A batch whose request failed after it was sent. The API may still have processed and charged it. */
+export interface FailedBatch {
+	ids: string[];
+	message: string;
+}
+
+/**
+ * Combine the batch responses into one Get Bulk result. A failed batch is listed as BATCH_FAILED, because it may
+ * have been charged. Batches never sent are listed as NOT_PROCESSED and are safe to resend.
+ */
+export function mergeBulk(responses: IDataObject[], failed?: FailedBatch, notSent: string[] = []): IDataObject {
 	const transcripts: unknown[] = [];
 	const errors: unknown[] = [];
 	const meta: IDataObject = { requested: 0, successful: 0, failed: 0, creditsUsed: 0 };
@@ -270,11 +279,30 @@ export function mergeBulk(responses: IDataObject[], notProcessed: string[], reas
 		for (const key of ['requested', 'successful', 'failed', 'creditsUsed']) meta[key] = Number(meta[key]) + (Number(part[key]) || 0);
 		if (part.creditsRemaining !== undefined) meta.creditsRemaining = part.creditsRemaining;
 	}
-	for (const videoId of notProcessed) errors.push({ videoId, error: reason, code: 'NOT_PROCESSED' });
-	meta.requested = Number(meta.requested) + notProcessed.length;
-	meta.failed = Number(meta.failed) + notProcessed.length;
-	meta.batches = responses.length;
-	return { success: true, data: { transcripts, ...(errors.length ? { errors } : {}) }, meta };
+	const failedIds = failed?.ids ?? [];
+	for (const videoId of failedIds) {
+		errors.push({
+			videoId,
+			error: `The request for this batch failed: ${failed?.message}. It may have been processed and charged, so check your usage before retrying it.`,
+			code: 'BATCH_FAILED',
+		});
+	}
+	for (const videoId of notSent) {
+		errors.push({ videoId, error: 'Not sent, an earlier batch failed. Safe to retry.', code: 'NOT_PROCESSED' });
+	}
+	const unresolved = failedIds.length + notSent.length;
+	meta.requested = Number(meta.requested) + unresolved;
+	meta.failed = Number(meta.failed) + unresolved;
+	meta.batches = responses.length + (failed ? 1 : 0);
+	if (failed) meta.failedBatches = 1;
+	return { success: !failed, data: { transcripts, ...(errors.length ? { errors } : {}) }, meta };
+}
+
+/** A whole number within [min, max]. Infinity is clamped like any number, a missing or non-numeric value uses the fallback. */
+export function boundedInteger(value: unknown, min: number, max: number, fallback: number): number {
+	const n = Number(value);
+	if (value === undefined || value === null || value === '' || Number.isNaN(n)) return fallback;
+	return Math.min(max, Math.max(min, Math.floor(n)));
 }
 
 function videoIdOf(value: unknown): string {
