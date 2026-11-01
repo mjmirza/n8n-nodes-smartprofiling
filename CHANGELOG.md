@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.3.0] - 2026-11-01
+
+### Fixed
+- The credential test no longer sends the API key to an unchecked Base URL. Previously it used the raw field, so a plain http or private address bypassed the check that execution applies.
+- The Base URL must be https on smartprofiling.com or one of its subdomains, in both execution and the credential test. Previously any public hostname was accepted, including names that resolve to private addresses.
+- Display Format is offered for the JSON transcript format, the only one that carries timed segments. Previously it was shown only for the text format, where it could not apply.
+- Saved playlist workflows keep their results. The node now has version 1.1, which sends the Limit. Version 1 nodes keep the previous request without a limit, so the API default of 200 still applies.
+- Runs on Node 18.0 again. Previously `URL.canParse` required Node 18.17.
+- Max Speakers and the chat Max Tokens and Temperature are sent with the request, as documented. Previously they were dropped.
+
+### Changed
+- The Continuation Token description and README state that the API does not apply the token yet. The provider returns the first page again, which the node cannot fix.
+- Tests pin the Retry-After wait, the node version behavior and the credential test host check.
+
 ## [0.2.0] - 2026-11-01
 
 ### Fixed

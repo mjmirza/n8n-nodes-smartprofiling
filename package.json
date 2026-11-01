@@ -1,6 +1,6 @@
 {
 	"name": "n8n-nodes-smartprofiling",
-	"version": "0.2.0",
+	"version": "0.3.0",
 	"description": "n8n community node for Smart Profiling - Extract transcripts, generate AI summaries, and chat with YouTube videos",
 	"license": "MIT",
 	"homepage": "https://smartprofiling.com",

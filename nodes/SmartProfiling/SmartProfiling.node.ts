@@ -38,7 +38,8 @@ export class SmartProfiling implements INodeType {
 		name: 'smartProfiling',
 		icon: { light: 'file:smartprofiling.svg', dark: 'file:smartprofiling.dark.svg' },
 		group: ['transform'],
-		version: 1,
+		version: [1, 1.1],
+		defaultVersion: 1.1,
 		subtitle: '={{$parameter["operation"] + ": " + $parameter["resource"]}}',
 		description: 'Extract transcripts, generate AI summaries, and chat with YouTube videos',
 		defaults: {
@@ -167,8 +168,11 @@ export class SmartProfiling implements INodeType {
 		for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
 			try {
 				const operation = this.getNodeParameter('operation', itemIndex) as string;
-				const request = buildRequest(resource, operation, (name, fallback) =>
-					this.getNodeParameter(name, itemIndex, fallback) as IDataObject[keyof IDataObject],
+				const request = buildRequest(
+					resource,
+					operation,
+					(name, fallback) => this.getNodeParameter(name, itemIndex, fallback) as IDataObject[keyof IDataObject],
+					this.getNode().typeVersion,
 				);
 
 				const requestOptions: IHttpRequestOptions = {

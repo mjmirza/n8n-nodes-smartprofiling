@@ -29,7 +29,7 @@ Turn any YouTube video, channel or playlist into transcripts, summaries, chapter
 
 | Resource | Operation | What it does |
 |---|---|---|
-| Channel | Get Videos | Lists a channel's videos, with a continuation token for the next page |
+| Channel | Get Videos | Lists a channel's videos. The continuation token field is not yet applied by the API, so it returns the first page |
 | Channel | Get Shorts | Lists a channel's shorts |
 | Channel | Get Playlists | Lists a channel's playlists |
 | Channel | Get Stats | Subscribers, views and video count, with optional AI insights |
@@ -45,6 +45,8 @@ Turn any YouTube video, channel or playlist into transcripts, summaries, chapter
 Every operation supports n8n's **Continue On Fail**, and failed items keep the HTTP status code. Rate limits are retried with backoff and honor the API's Retry-After header. Server errors are retried only on calls that do not use credits, so a paid request is never charged twice.
 
 Summary Length, Custom Prompt, Max Speakers, and the chat Max Tokens and Temperature are sent with the request but not yet applied by the API.
+
+New nodes use version 1.1, which sends the playlist Limit. Nodes saved on version 1 keep the old behavior and get the API default of 200 videos.
 
 ### Example workflows
 
@@ -62,7 +64,7 @@ Bulk transcript export:
 | Field | Value |
 |---|---|
 | API Key | Your key from the Smart Profiling dashboard |
-| Base URL | Leave the default unless you were given a dedicated domain. Must use https and a public host |
+| Base URL | Leave the default unless you were given a dedicated domain. Must be https on smartprofiling.com or one of its subdomains |
 
 The credential is tested on save with a request that uses no credits, so a wrong key shows up immediately. API documentation is at [smartprofiling.com/api-docs](https://smartprofiling.com/api-docs).
 

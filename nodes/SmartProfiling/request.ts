@@ -44,10 +44,21 @@ function isPrivateV6(host: string): boolean {
 	return isPrivateV4([hi >> 8, hi & 255, lo >> 8, lo & 255].join('.'));
 }
 
+function parseUrl(value: string): URL | undefined {
+	try {
+		return new URL(value);
+	} catch {
+		return undefined;
+	}
+}
+
+/** The API key is only ever sent to the official domain or one of its subdomains. */
+export const ALLOWED_HOST = /^([a-z0-9-]+\.)*smartprofiling\.com$/;
+
 /** Validates the credential Base URL before the API key is sent to it (https, public host). */
 export function normalizeBaseUrl(raw: unknown): string {
 	const value = typeof raw === 'string' && raw.trim() ? raw.trim() : DEFAULT_BASE_URL;
-	const parsed = URL.canParse(value) ? new URL(value) : undefined;
+	const parsed = parseUrl(value);
 	if (!parsed) {
 		throw new Error('Base URL is not a valid URL');
 	}
@@ -69,12 +80,20 @@ export function normalizeBaseUrl(raw: unknown): string {
 	) {
 		throw new Error('Base URL must not point to a local or private address');
 	}
+	if (!ALLOWED_HOST.test(host)) {
+		throw new Error('Base URL must be smartprofiling.com or one of its subdomains');
+	}
 	const path = parsed.pathname.replace(/\/+$/, '').replace(/\/api\/v1$/, '');
 	return `${parsed.origin}${path}`;
 }
 
 /** Builds the HTTP request for one item from the node parameters. */
-export function buildRequest(resource: string, operation: string, get: ParamReader): BuiltRequest {
+export function buildRequest(
+	resource: string,
+	operation: string,
+	get: ParamReader,
+	typeVersion = 1.1,
+): BuiltRequest {
 	if (resource === 'transcript') {
 		const options = (get('additionalOptions', {}) as IDataObject) ?? {};
 		const displayFormat = typeof options.displayFormat === 'string' ? options.displayFormat : undefined;
@@ -120,6 +139,9 @@ export function buildRequest(resource: string, operation: string, get: ParamRead
 		if (typeof conversationId === 'string' && conversationId.trim()) {
 			body.conversationId = conversationId.trim();
 		}
+		const options = (get('additionalOptions', {}) as IDataObject) ?? {};
+		if (typeof options.maxTokens === 'number') body.maxTokens = options.maxTokens;
+		if (typeof options.temperature === 'number') body.temperature = options.temperature;
 		return { method: 'POST', endpoint: '/api/v1/chat', qs: {}, body, billable: true };
 	}
 
@@ -134,7 +156,10 @@ export function buildRequest(resource: string, operation: string, get: ParamRead
 	}
 
 	if (resource === 'speakers') {
-		return { method: 'POST', endpoint: '/api/v1/speakers', qs: {}, body: { videoId: get('videoId') }, billable: true };
+		const body: IDataObject = { videoId: get('videoId') };
+		const options = (get('additionalOptions', {}) as IDataObject) ?? {};
+		if (typeof options.maxSpeakers === 'number') body.maxSpeakers = options.maxSpeakers;
+		return { method: 'POST', endpoint: '/api/v1/speakers', qs: {}, body, billable: true };
 	}
 
 	if (resource === 'channel') {
@@ -174,8 +199,9 @@ export function buildRequest(resource: string, operation: string, get: ParamRead
 		const input = String(get('playlistId') ?? '').trim();
 		// The API reads a full URL from `url` and a bare ID from `id`.
 		const qs: IDataObject = /^https?:\/\//i.test(input) ? { url: input } : { id: input };
+		// Version 1 never sent the limit, so saved workflows keep the API default of 200.
 		const limit = get('limit', 50);
-		if (typeof limit === 'number' && Number.isFinite(limit)) qs.limit = limit;
+		if (typeVersion >= 1.1 && typeof limit === 'number' && Number.isFinite(limit)) qs.limit = limit;
 		return { method: 'GET', endpoint: '/api/v1/playlists', qs, body: {}, billable: true };
 	}
 

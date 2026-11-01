@@ -32,7 +32,7 @@ export class SmartProfilingApi implements ICredentialType {
 			placeholder: 'https://smartprofiling.com',
 			hint: 'Enter only the domain. The /api/v1 path is added automatically.',
 			description:
-				'Enter only the domain, for example https://smartprofiling.com. The /api/v1 path is added automatically. Must use https and a public host, local and private addresses are rejected.',
+				'Enter only the domain, for example https://smartprofiling.com. The /api/v1 path is added automatically. Must be https on smartprofiling.com or one of its subdomains.',
 		},
 	];
 
@@ -47,7 +47,9 @@ export class SmartProfilingApi implements ICredentialType {
 
 	test: ICredentialTestRequest = {
 		request: {
-			baseURL: '={{$credentials.baseUrl}}',
+			// Mirrors normalizeBaseUrl. Any other host maps to .invalid so the test fails instead of sending the key.
+			baseURL:
+				'={{ /^https:\\/\\/([a-z0-9-]+\\.)*smartprofiling\\.com(\\/|$)/i.test(String($credentials.baseUrl || "").trim()) ? String($credentials.baseUrl).trim().replace(/\\/+$/, "").replace(/\\/api\\/v1$/, "") : "https://base-url-not-allowed.invalid" }}',
 			// Reads cached channel videos, which checks the key without deducting credits.
 			url: '/api/v1/channels/UCBR8-60-B28hp2BmDPdntcQ/videos',
 			method: 'GET',
