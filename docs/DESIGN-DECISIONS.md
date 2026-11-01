@@ -1,6 +1,6 @@
 # Design decisions
 
-## Playlist Limit on node version 1 (accepted exception)
+## Playlist Limit on node version 1 (documented exception)
 
 **Status.** Maintainer decision: shipped behaviour kept, no breaking change; tradeoff and evidence below.
 
