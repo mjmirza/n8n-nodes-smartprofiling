@@ -173,7 +173,7 @@ export const channelDescription: INodeProperties[] = [
 				typeOptions: { password: true },
 				default: '',
 				placeholder: 'Paste continuationToken from previous response',
-				hint: 'Use this to fetch the next batch of results',
+				hint: 'The API does not apply this token yet, so every call returns the first page',
 				description: 'Token for pagination, copied from the previous response. The API does not apply it yet and returns the first page again.',
 			},
 		],

@@ -93,6 +93,7 @@ export function buildRequest(
 	operation: string,
 	get: ParamReader,
 	typeVersion = 1.1,
+	savedParameters: IDataObject = {},
 ): BuiltRequest {
 	if (resource === 'transcript') {
 		const options = (get('additionalOptions', {}) as IDataObject) ?? {};
@@ -199,9 +200,10 @@ export function buildRequest(
 		const input = String(get('playlistId') ?? '').trim();
 		// The API reads a full URL from `url` and a bare ID from `id`.
 		const qs: IDataObject = /^https?:\/\//i.test(input) ? { url: input } : { id: input };
-		// Version 1 never sent the limit, so saved workflows keep the API default of 200.
+		// Version 1 sends the limit only when the workflow saved one, which 0.2.0 honored. An unsaved default keeps the API default of 200 as 0.1.x did.
 		const limit = get('limit', 50);
-		if (typeVersion >= 1.1 && typeof limit === 'number' && Number.isFinite(limit)) qs.limit = limit;
+		const send = typeVersion >= 1.1 || savedParameters.limit !== undefined;
+		if (send && typeof limit === 'number' && Number.isFinite(limit)) qs.limit = limit;
 		return { method: 'GET', endpoint: '/api/v1/playlists', qs, body: {}, billable: true };
 	}
 
@@ -227,8 +229,28 @@ export function retryDelayMs(attempt: number, initialDelayMs: number, retryAfter
 	return Math.min(initialDelayMs * Math.pow(2, attempt), 30_000);
 }
 
+/** An HTTP error status read from a full response, so its headers are kept. */
+export class HttpStatusError extends Error {
+	constructor(
+		readonly status: number,
+		readonly headers: IDataObject | undefined,
+		readonly body: unknown,
+	) {
+		super(`Request failed with status code ${status}`);
+	}
+}
+
+/** Picks the API's own error message out of a response body. */
+export function apiErrorMessage(body: unknown, status: number): string {
+	const b = body as { error?: { message?: unknown } | string; message?: unknown } | undefined;
+	const nested = typeof b?.error === 'object' ? b.error?.message : b?.error;
+	const msg = typeof nested === 'string' ? nested : typeof b?.message === 'string' ? b.message : '';
+	return msg ? `${msg} (HTTP ${status})` : `Request failed with status code ${status}`;
+}
+
 /** Reads the HTTP status from an error as thrown by the n8n request helpers. */
 export function statusOf(error: unknown): number | undefined {
+	if (error instanceof HttpStatusError) return error.status;
 	const err = error as { httpCode?: string; statusCode?: number; response?: { status?: number } };
 	const raw = err?.httpCode ?? err?.statusCode ?? err?.response?.status;
 	const code = Number(raw);
@@ -237,6 +259,7 @@ export function statusOf(error: unknown): number | undefined {
 
 /** Reads a Retry-After header from an error as thrown by the n8n request helpers. */
 export function retryAfterOf(error: unknown): unknown {
+	if (error instanceof HttpStatusError) return error.headers?.['retry-after'] ?? error.headers?.['Retry-After'];
 	const err = error as {
 		headers?: Record<string, unknown>;
 		response?: { headers?: Record<string, unknown> };

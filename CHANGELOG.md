@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.3.1] - 2026-11-01
+
+### Fixed
+- A version 1 playlist node that saved a Limit sends it again. 0.3.0 dropped it, so a workflow saved on 0.2.0 with Limit 1 started receiving up to 200 videos. An unsaved default still gets the API default of 200, as on 0.1.x.
+- Retry-After is honored on real n8n. n8n drops the response headers when it wraps an HTTP error, so the node now reads the full response itself and keeps the header. Previously retries ignored the wait in production while the tests passed.
+- HTTP errors carry the API's own error message and status code.
+- The Shorts and Playlists continuation token no longer promises a next batch. The API returns the first page again.
+
+### Changed
+- Tests use a mock that wraps HTTP errors the way n8n does, so a header lost in wrapping fails a test.
+
 ## [0.3.0] - 2026-11-01
 
 ### Fixed
