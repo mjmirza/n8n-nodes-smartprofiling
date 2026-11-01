@@ -42,5 +42,5 @@ test('playlist Get Videos states that only the first page is read', () => {
 	const op = props.find((p) => p.name === 'operation' && p.options?.some((o) => o.value === 'getVideos' && /playlist/i.test(o.description)));
 	assert.match(op.options.find((o) => o.value === 'getVideos').description, /first page/);
 	const limit = props.find((p) => p.name === 'limit');
-	assert.match(limit.description, /first page/);
+	assert.match(limit.hint, /first page/);
 });
