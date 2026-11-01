@@ -174,7 +174,7 @@ export const channelDescription: INodeProperties[] = [
 				default: '',
 				placeholder: 'Paste continuationToken from previous response',
 				hint: 'Use this to fetch the next batch of results',
-				description: 'Token for pagination. Copy the continuationToken from the previous response to get more results. When hasMore is false, all results have been fetched.',
+				description: 'Token for pagination, copied from the previous response. The API does not apply it yet and returns the first page again.',
 			},
 		],
 	},

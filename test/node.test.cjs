@@ -6,7 +6,7 @@ const { NodeApiError } = require('n8n-workflow');
 const { SmartProfiling } = require('../dist/nodes/SmartProfiling/SmartProfiling.node.js');
 const { SmartProfilingApi } = require('../dist/credentials/SmartProfilingApi.credentials.js');
 
-const NODE = { id: 'n', name: 'Smart Profiling', type: 'x', typeVersion: 1, position: [0, 0], parameters: {} };
+const NODE = { id: 'n', name: 'Smart Profiling', type: 'x', typeVersion: 1.1, position: [0, 0], parameters: {} };
 
 function ctx(params, responses, opts = {}) {
 	const calls = [];

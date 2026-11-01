@@ -92,7 +92,7 @@ export const transcriptDescription: INodeProperties[] = [
 		displayOptions: {
 			show: {
 				...showOnlyForTranscript,
-				format: ['text'],
+				format: ['json'],
 			},
 		},
 		options: [
