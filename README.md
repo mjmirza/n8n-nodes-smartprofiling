@@ -29,14 +29,14 @@ Turn any YouTube video, channel or playlist into transcripts, summaries, chapter
 
 | Resource | Operation | What it does |
 |---|---|---|
-| Channel | Get Videos | Lists a channel's videos. The continuation token field is not yet applied by the API, so it returns the first page |
-| Channel | Get Shorts | Lists a channel's shorts. The continuation token is not yet applied by the API, so it returns the first page |
-| Channel | Get Playlists | Lists a channel's playlists. The continuation token is not yet applied by the API, so it returns the first page |
+| Channel | Get Videos | Lists the channel's latest videos, the first page the API returns |
+| Channel | Get Shorts | Lists the channel's latest shorts, the first page the API returns |
+| Channel | Get Playlists | Lists the channel's playlists, the first page the API returns |
 | Channel | Get Stats | Subscribers, views and video count, with optional AI insights |
 | Channel | Get Growth | Growth data for 7, 30, 90 or 365 days, for channels already tracked. Run Get Stats first, history then grows daily |
 | Chapter | Generate Chapters | Timestamped chapters as JSON, YouTube description text or Markdown, with optional minimum length and maximum count |
 | Chat | Send Message | Asks a question about a video and keeps a conversation ID for follow ups |
-| Playlist | Get Videos | Lists the videos in a playlist, from an ID or a full URL, up to the Limit you set |
+| Playlist | Get Videos | Lists the videos on the first page YouTube returns for a playlist, usually up to 100, from an ID or a full URL, capped by the Limit you set |
 | Speaker | Identify Speakers | Labels who speaks when |
 | Summarize | Generate Summary | Brief, Detailed, Bullet Points or Chapters format |
 | Transcript | Get Single | Transcript for one video as JSON, text, SRT or VTT. With JSON, a Display Format adds a Timeline, Plain, Paragraph or Sentences `formattedText` field |

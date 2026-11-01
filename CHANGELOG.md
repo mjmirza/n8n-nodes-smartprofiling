@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.4] - 2026-11-01
+
+### Fixed
+- Get Bulk sends 5 videos per request, the smallest per-request limit of any plan. Previously batches of 20 failed with HTTP 400 on the Free plan, which allows 5.
+
+### Removed
+- The channel Continuation Token field. The API never read it, so every call returned the first page, and a pagination loop paid again for the same results. Saved workflows that set it behave exactly as before.
+
+### Changed
+- The README and Get Growth state that growth history needs a channel already tracked through Get Stats, and that history builds one daily snapshot at a time.
+- Playlist Get Videos and its Limit state that the API reads only the first page of a playlist, usually up to 100 videos.
+
 ## [0.4.3] - 2026-11-01
 
 ### Fixed

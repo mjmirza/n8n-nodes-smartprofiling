@@ -191,8 +191,6 @@ export function buildRequest(
 		if (operation === 'getShorts') content = 'shorts';
 		if (operation === 'getPlaylists') content = 'playlists';
 		const qs: IDataObject = { id: channelId, content };
-		const options = (get('additionalOptions', {}) as IDataObject) ?? {};
-		if (options.continuationToken) qs.continuationToken = options.continuationToken;
 		return { method: 'GET', endpoint: '/api/v1/channels', qs, body: {}, billable: true };
 	}
 

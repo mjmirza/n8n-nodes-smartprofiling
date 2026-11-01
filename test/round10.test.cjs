@@ -28,3 +28,19 @@ test('the README and the operation describe growth history as needing a tracked 
 		.options.find((o) => o.value === 'getGrowth');
 	assert.match(growth.description, /tracked by Get Stats/);
 });
+
+test('channel lists offer no pagination token the API ignores, and never send one', async () => {
+	const props = new SmartProfiling().description.properties;
+	assert.equal(JSON.stringify(props).includes('continuationToken'), false);
+	const c = ctx({ resource: 'channel', operation: 'getVideos', channelId: 'UC1', additionalOptions: { continuationToken: 'old' } }, { success: true, data: {} });
+	await run(c);
+	assert.deepEqual(c.calls[0].qs, { id: 'UC1', content: 'videos' });
+});
+
+test('playlist Get Videos states that only the first page is read', () => {
+	const props = new SmartProfiling().description.properties;
+	const op = props.find((p) => p.name === 'operation' && p.options?.some((o) => o.value === 'getVideos' && /playlist/i.test(o.description)));
+	assert.match(op.options.find((o) => o.value === 'getVideos').description, /first page/);
+	const limit = props.find((p) => p.name === 'limit');
+	assert.match(limit.description, /first page/);
+});

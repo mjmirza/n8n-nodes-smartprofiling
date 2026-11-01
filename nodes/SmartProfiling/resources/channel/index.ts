@@ -33,7 +33,6 @@ export const channelDescription: INodeProperties[] = [
 						qs: {
 							id: '={{$parameter.channelId}}',
 							content: 'playlists',
-							continuationToken: '={{$parameter.additionalOptions.continuationToken || undefined}}',
 						},
 					},
 				},
@@ -50,7 +49,6 @@ export const channelDescription: INodeProperties[] = [
 						qs: {
 							id: '={{$parameter.channelId}}',
 							content: 'shorts',
-							continuationToken: '={{$parameter.additionalOptions.continuationToken || undefined}}',
 						},
 					},
 				},
@@ -73,7 +71,6 @@ export const channelDescription: INodeProperties[] = [
 						qs: {
 							id: '={{$parameter.channelId}}',
 							content: 'videos',
-							continuationToken: '={{$parameter.additionalOptions.continuationToken || undefined}}',
 						},
 					},
 				},
@@ -152,30 +149,5 @@ export const channelDescription: INodeProperties[] = [
 		],
 		default: '30d',
 		description: 'Time period for growth data',
-	},
-	{
-		displayName: 'Additional Options',
-		name: 'additionalOptions',
-		type: 'collection',
-		placeholder: 'Add Option',
-		default: {},
-		displayOptions: {
-			show: {
-				resource: ['channel'],
-				operation: ['getVideos', 'getShorts', 'getPlaylists'],
-			},
-		},
-		options: [
-			{
-				displayName: 'Continuation Token',
-				name: 'continuationToken',
-				type: 'string',
-				typeOptions: { password: true },
-				default: '',
-				placeholder: 'Paste continuationToken from previous response',
-				hint: 'The API does not apply this token yet, so every call returns the first page',
-				description: 'Token for pagination, copied from the previous response. The API does not apply it yet and returns the first page again.',
-			},
-		],
 	},
 ];
