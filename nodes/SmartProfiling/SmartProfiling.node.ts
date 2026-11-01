@@ -156,11 +156,13 @@ export class SmartProfiling implements INodeType {
 
 		const resource = this.getNodeParameter('resource', 0) as string;
 		const credentials = await this.getCredentials('smartProfilingApi');
-		let baseUrl: string;
+		// A Base URL error is reported per item, so Continue On Fail can turn it into error items.
+		let baseUrl = '';
+		let baseUrlError: Error | undefined;
 		try {
 			baseUrl = normalizeBaseUrl(credentials.baseUrl);
 		} catch (error) {
-			throw new NodeOperationError(this.getNode(), error as Error);
+			baseUrlError = error as Error;
 		}
 
 		// AI operations need a longer timeout.
@@ -169,6 +171,7 @@ export class SmartProfiling implements INodeType {
 
 		for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
 			try {
+				if (baseUrlError) throw new NodeOperationError(this.getNode(), baseUrlError.message, { itemIndex });
 				const operation = this.getNodeParameter('operation', itemIndex) as string;
 				// Read per item, since an expression can differ between items. The UI bounds are not enforced for expressions.
 				const retryOptions = this.getNodeParameter('retryOptions', itemIndex, {}) as {
