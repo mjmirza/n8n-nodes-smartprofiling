@@ -270,6 +270,8 @@ export interface FailedBatch {
  * have been charged. Batches never sent are listed as NOT_PROCESSED and are safe to resend.
  */
 export function mergeBulk(responses: IDataObject[], failed?: FailedBatch, notSent: string[] = []): IDataObject {
+	// One complete batch is returned exactly as the API sent it, as before batching existed.
+	if (responses.length === 1 && !failed && notSent.length === 0) return responses[0];
 	const transcripts: unknown[] = [];
 	const errors: unknown[] = [];
 	const meta: IDataObject = { requested: 0, successful: 0, failed: 0, creditsUsed: 0 };
@@ -280,6 +282,8 @@ export function mergeBulk(responses: IDataObject[], failed?: FailedBatch, notSen
 		const part = (response.meta ?? {}) as IDataObject;
 		for (const key of ['requested', 'successful', 'failed', 'creditsUsed']) meta[key] = Number(meta[key]) + (Number(part[key]) || 0);
 		if (part.creditsRemaining !== undefined) meta.creditsRemaining = part.creditsRemaining;
+		if (typeof part.responseTime === 'number') meta.responseTime = (Number(meta.responseTime) || 0) + part.responseTime;
+		if (part.cache && typeof part.cache === 'object') meta.cache = sumNumbers((meta.cache ?? {}) as IDataObject, part.cache as IDataObject);
 	}
 	const failedIds = failed?.ids ?? [];
 	for (const videoId of failedIds) {
@@ -302,6 +306,15 @@ export function mergeBulk(responses: IDataObject[], failed?: FailedBatch, notSen
 		if (failed.statusCode !== undefined) meta.failedStatusCode = failed.statusCode;
 	}
 	return { success: !failed, data: { transcripts, ...(errors.length ? { errors } : {}) }, meta };
+}
+
+/** Adds the numeric fields of two objects, so per-batch counters such as cache hits become totals. */
+function sumNumbers(total: IDataObject, part: IDataObject): IDataObject {
+	const out: IDataObject = { ...total };
+	for (const [key, value] of Object.entries(part)) {
+		out[key] = typeof value === 'number' ? (Number(out[key]) || 0) + value : value;
+	}
+	return out;
 }
 
 /** A whole number within [min, max]. Infinity is clamped like any number, a missing or non-numeric value uses the fallback. */

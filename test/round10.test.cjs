@@ -79,3 +79,40 @@ test('Summary Language describes the transcript language, not a translation', ()
 	assert.match(lang.description, /Empty uses English/);
 	assert.match(lang.description, /does not translate/);
 });
+
+test('a single-batch bulk response keeps every meta field the API returned', async () => {
+	const api = { success: true, data: { transcripts: [{}] }, meta: { requested: 1, successful: 1, failed: 0, creditsUsed: 1, cache: { hits: 1, misses: 0 }, responseTime: 120 } };
+	const c = ctx({ resource: 'transcript', operation: 'getBulk', videoIds: ids(1).join('\n'), format: 'json', language: 'en' }, api);
+	const out = await run(c);
+	assert.deepEqual(out[0][0].json, api);
+});
+
+test('a multi-batch bulk response totals cache counters and response time', async () => {
+	const part = (n, hits, ms) => ({ success: true, data: { transcripts: Array(n).fill({}) }, meta: { requested: n, successful: n, failed: 0, creditsUsed: n, cache: { hits, misses: n - hits }, responseTime: ms } });
+	const c = ctx({ resource: 'transcript', operation: 'getBulk', videoIds: ids(6).join('\n'), format: 'json', language: 'en' }, [part(5, 2, 100), part(1, 1, 30)]);
+	const meta = (await run(c))[0][0].json.meta;
+	assert.deepEqual(meta.cache, { hits: 3, misses: 3 });
+	assert.equal(meta.responseTime, 130);
+});
+
+test('a failed first batch still lists BATCH_FAILED and NOT_PROCESSED under Continue On Fail', async () => {
+	const c = ctx(
+		{ resource: 'transcript', operation: 'getBulk', videoIds: ids(11).join('\n'), format: 'json', language: 'en', retryOptions: { maxRetries: 0 } },
+		apiError(504),
+		{ continueOnFail: true },
+	);
+	const json = (await run(c))[0][0].json;
+	assert.equal(json.statusCode, 504);
+	const codes = json.data.errors.map((e) => e.code);
+	assert.equal(codes.filter((x) => x === 'BATCH_FAILED').length, 5);
+	assert.equal(codes.filter((x) => x === 'NOT_PROCESSED').length, 6);
+	assert.equal(c.calls.length, 1);
+});
+
+test('a failed first batch without Continue On Fail still throws the original status', async () => {
+	const c = ctx(
+		{ resource: 'transcript', operation: 'getBulk', videoIds: ids(11).join('\n'), format: 'json', language: 'en', retryOptions: { maxRetries: 0 } },
+		apiError(402),
+	);
+	await assert.rejects(run(c), (e) => String(e.httpCode) === '402');
+});

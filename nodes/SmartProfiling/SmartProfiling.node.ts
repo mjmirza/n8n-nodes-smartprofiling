@@ -272,8 +272,6 @@ export class SmartProfiling implements INodeType {
 							batchError = error;
 						}
 						if (batchError === undefined) continue;
-						// Nothing received yet, so the original error with its status code is the clearest report.
-						if (done.length === 0) throw new NodeApiError(this.getNode(), batchError as JsonObject, { itemIndex });
 						failed = { ids: batches[b], message: (batchError as Error).message, statusCode: statusOf(batchError) };
 						bulkFailure = batchError;
 						next = b + 1;
