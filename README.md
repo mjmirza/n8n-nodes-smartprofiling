@@ -11,7 +11,7 @@ Turn any YouTube video, channel or playlist into transcripts, summaries, chapter
 ## What you get
 
 - **A transcript in one step.** Paste a video ID or URL and get clean text back, ready for a sheet, a CMS or an AI step.
-- **Summaries without watching.** Brief, detailed, bullet point or chapter summaries, in the length you choose.
+- **Summaries without watching.** Brief, detailed, bullet point or chapter summaries.
 - **Answers from a video.** Send a question and get an answer grounded in what the video actually says.
 - **Chapters and speakers.** Timestamped chapters ready for a YouTube description, and speakers labelled in interviews and podcasts.
 - **Channel intelligence.** Videos, shorts, playlists, subscriber and view counts, and growth over 7 to 365 days for any channel.
@@ -34,15 +34,17 @@ Turn any YouTube video, channel or playlist into transcripts, summaries, chapter
 | Channel | Get Playlists | Lists a channel's playlists |
 | Channel | Get Stats | Subscribers, views and video count, with optional AI insights |
 | Channel | Get Growth | Growth data for 7, 30, 90 or 365 days |
-| Chapter | Generate Chapters | Timestamped chapters as JSON, YouTube description text or Markdown |
+| Chapter | Generate Chapters | Timestamped chapters as JSON, YouTube description text or Markdown, with optional minimum length and maximum count |
 | Chat | Send Message | Asks a question about a video and keeps a conversation ID for follow ups |
-| Playlist | Get Videos | Lists the videos in a playlist |
+| Playlist | Get Videos | Lists the videos in a playlist, from an ID or a full URL, up to the Limit you set |
 | Speaker | Identify Speakers | Labels who speaks when |
-| Summarize | Generate Summary | Brief, Detailed, Bullet Points or Chapters format in Short, Medium or Long length |
-| Transcript | Get Single | Transcript for one video, as Timeline, Plain, Paragraph or Sentences |
+| Summarize | Generate Summary | Brief, Detailed, Bullet Points or Chapters format |
+| Transcript | Get Single | Transcript for one video as JSON, text, SRT or VTT. With JSON, a Display Format adds a Timeline, Plain, Paragraph or Sentences `formattedText` field |
 | Transcript | Get Bulk | Transcripts for several videos in one request |
 
-Every operation supports n8n's **Continue On Fail** and has configurable retries with backoff for rate limits.
+Every operation supports n8n's **Continue On Fail**, and failed items keep the HTTP status code. Rate limits are retried with backoff and honor the API's Retry-After header. Server errors are retried only on calls that do not use credits, so a paid request is never charged twice.
+
+Summary Length, Custom Prompt, Max Speakers, and the chat Max Tokens and Temperature are sent with the request but not yet applied by the API.
 
 ### Example workflows
 
@@ -60,9 +62,9 @@ Bulk transcript export:
 | Field | Value |
 |---|---|
 | API Key | Your key from the Smart Profiling dashboard |
-| Base URL | Leave the default unless you were given a dedicated domain |
+| Base URL | Leave the default unless you were given a dedicated domain. Must use https and a public host |
 
-The credential is tested on save, so a wrong key shows up immediately. API documentation is at [smartprofiling.com/api-docs](https://smartprofiling.com/api-docs).
+The credential is tested on save with a request that uses no credits, so a wrong key shows up immediately. API documentation is at [smartprofiling.com/api-docs](https://smartprofiling.com/api-docs).
 
 ## Troubleshooting
 
@@ -86,6 +88,7 @@ The credential is tested on save, so a wrong key shows up immediately. API docum
 npm ci
 npm run lint
 npm run build
+npm test      # lint, build, then the behavior tests in test/
 npm run dev   # starts a local n8n with the node loaded
 ```
 

@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.2.0] - 2026-11-01
+
+### Fixed
+- Chat works. Previously the node read a `question` parameter that does not exist and failed before sending, now it sends `message` and the optional `conversationId` for follow-up questions.
+- Paid requests are never charged twice. Previously summaries, chat, chapters, speakers, transcripts, channels and playlists were retried after 500, 502, 503, 504 or 408, and the API can deduct credits before such an error. Now only 429 is retried on those calls, and server errors are retried only on Channel Get Growth, which uses no credits.
+- Rate-limit retries honor the `Retry-After` header. Previously the fixed backoff gave up before the API's window reopened.
+- Playlist Limit is sent. Previously it was ignored and the API returned up to 200 videos.
+- A pasted playlist URL is sent as `url`. Previously it was sent as `id` and the lookup failed.
+- Chapter Min Chapter Duration and Max Chapters are sent as `options.minChapterLength` and `options.maxChapters`. Previously both were ignored.
+- Transcript Display Format works. With the JSON format the output gains a `formattedText` field in Timeline, Plain, Paragraph or Sentences layout. Previously the setting was ignored.
+- Continue On Fail keeps the HTTP status code. Previously `statusCode` was always empty because it read a field the error does not carry.
+- The credential test no longer spends a credit and no longer fails for accounts with zero credits. Previously it fetched a real transcript, which costs one credit.
+- The Base URL must use https and a public host, and a trailing `/api/v1` is removed. Previously any URL was accepted, so the API key could be sent to a local or private address.
+
+### Changed
+- Summary Length, Custom Prompt, Max Speakers and the chat Max Tokens and Temperature are documented as not yet applied by the API. They are still sent, so they take effect once supported. Previously the descriptions implied they worked.
+- `npm test`, CI and the publish workflow run behavior tests for every fix above. Previously `npm test` ran only lint and build.
+
 ## [0.1.11] - 2026-11-01
 
 ### Fixed

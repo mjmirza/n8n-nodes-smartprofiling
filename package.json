@@ -1,6 +1,6 @@
 {
 	"name": "n8n-nodes-smartprofiling",
-	"version": "0.1.11",
+	"version": "0.2.0",
 	"description": "n8n community node for Smart Profiling - Extract transcripts, generate AI summaries, and chat with YouTube videos",
 	"license": "MIT",
 	"homepage": "https://smartprofiling.com",
@@ -28,7 +28,7 @@
 		"lint:fix": "n8n-node lint --fix",
 		"release": "n8n-node release",
 		"prepublishOnly": "n8n-node prerelease",
-		"test": "npm run lint && npm run build"
+		"test": "npm run lint && npm run build && node --test test/*.test.cjs"
 	},
 	"files": [
 		"dist",

@@ -3,7 +3,7 @@ import type {
 	INodeExecutionData,
 	INodeType,
 	INodeTypeDescription,
-	IHttpRequestMethods,
+	IHttpRequestOptions,
 	IDataObject,
 	JsonObject,
 } from 'n8n-workflow';
@@ -15,21 +15,22 @@ import { chaptersDescription } from './resources/chapters';
 import { speakersDescription } from './resources/speakers';
 import { channelDescription } from './resources/channel';
 import { playlistDescription } from './resources/playlist';
+import {
+	applyDisplayFormat,
+	buildRequest,
+	isRetryable,
+	normalizeBaseUrl,
+	retryAfterOf,
+	retryDelayMs,
+	statusOf,
+} from './request';
 
 // Retry configuration
 const RETRY_CONFIG = {
 	maxRetries: 3,
 	initialDelayMs: 1000,
-	maxDelayMs: 10000,
-	backoffMultiplier: 2,
-	retryableStatusCodes: [408, 429, 500, 502, 503, 504],
 };
 
-// Calculate delay with exponential backoff
-function getRetryDelay(attempt: number): number {
-	const delay = RETRY_CONFIG.initialDelayMs * Math.pow(RETRY_CONFIG.backoffMultiplier, attempt);
-	return Math.min(delay, RETRY_CONFIG.maxDelayMs);
-}
 
 export class SmartProfiling implements INodeType {
 	description: INodeTypeDescription = {
@@ -145,9 +146,13 @@ export class SmartProfiling implements INodeType {
 
 		const resource = this.getNodeParameter('resource', 0) as string;
 		const credentials = await this.getCredentials('smartProfilingApi');
-		const baseUrl = (credentials.baseUrl as string) || 'https://smartprofiling.com';
+		let baseUrl: string;
+		try {
+			baseUrl = normalizeBaseUrl(credentials.baseUrl);
+		} catch (error) {
+			throw new NodeOperationError(this.getNode(), error as Error);
+		}
 
-		// Get retry options
 		const retryOptions = this.getNodeParameter('retryOptions', 0, {}) as {
 			maxRetries?: number;
 			initialDelay?: number;
@@ -155,208 +160,56 @@ export class SmartProfiling implements INodeType {
 		const maxRetries = retryOptions.maxRetries ?? RETRY_CONFIG.maxRetries;
 		const initialDelay = retryOptions.initialDelay ?? RETRY_CONFIG.initialDelayMs;
 
+		// AI operations need a longer timeout.
+		const isAiOperation = ['summarize', 'chat', 'speakers', 'chapters'].includes(resource);
+		const timeout = isAiOperation ? 120000 : 30000;
+
 		for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
 			try {
 				const operation = this.getNodeParameter('operation', itemIndex) as string;
-				let endpoint = '';
-				let method: IHttpRequestMethods = 'GET';
-				let body: Record<string, unknown> = {};
-				let qs: Record<string, string | number | undefined> = {};
+				const request = buildRequest(resource, operation, (name, fallback) =>
+					this.getNodeParameter(name, itemIndex, fallback) as IDataObject[keyof IDataObject],
+				);
 
-				// Build request based on resource and operation
-				if (resource === 'transcript') {
-					if (operation === 'get') {
-						endpoint = '/api/v1/transcripts';
-						method = 'GET';
-						qs = {
-							id: this.getNodeParameter('videoId', itemIndex) as string,
-							format: this.getNodeParameter('format', itemIndex) as string,
-							language: this.getNodeParameter('language', itemIndex) as string,
-						};
-					} else if (operation === 'getBulk') {
-						endpoint = '/api/v1/transcripts';
-						method = 'POST';
-						const videoIdsRaw = this.getNodeParameter('videoIds', itemIndex) as string;
-						const videoIds = videoIdsRaw.split('\n').map((id) => id.trim()).filter((id) => id);
-						body = {
-							ids: videoIds,
-							format: this.getNodeParameter('format', itemIndex) as string,
-							languages: [this.getNodeParameter('language', itemIndex) as string],
-						};
-					}
-				} else if (resource === 'summarize') {
-					endpoint = '/api/v1/summarize';
-					method = 'POST';
-					body = {
-						videoId: this.getNodeParameter('videoId', itemIndex) as string,
-						format: this.getNodeParameter('summaryFormat', itemIndex) as string,
-						length: this.getNodeParameter('summaryLength', itemIndex) as string,
-					};
-					// Add additional options if present
-					const additionalOptions = this.getNodeParameter('additionalOptions', itemIndex, {}) as {
-						language?: string;
-						customPrompt?: string;
-					};
-					if (additionalOptions.language) {
-						body.language = additionalOptions.language;
-					}
-					if (additionalOptions.customPrompt) {
-						body.customPrompt = additionalOptions.customPrompt;
-					}
-				} else if (resource === 'chat') {
-					endpoint = '/api/v1/chat';
-					method = 'POST';
-					body = {
-						videoId: this.getNodeParameter('videoId', itemIndex) as string,
-						question: this.getNodeParameter('question', itemIndex) as string,
-					};
-				} else if (resource === 'chapters') {
-					endpoint = '/api/v1/chapters';
-					method = 'POST';
-					body = {
-						videoId: this.getNodeParameter('videoId', itemIndex) as string,
-						format: this.getNodeParameter('chapterFormat', itemIndex) as string,
-					};
-				} else if (resource === 'speakers') {
-					endpoint = '/api/v1/speakers';
-					method = 'POST';
-					body = {
-						videoId: this.getNodeParameter('videoId', itemIndex) as string,
-					};
-				} else if (resource === 'channel') {
-					const channelId = this.getNodeParameter('channelId', itemIndex) as string;
-
-					if (operation === 'getStats') {
-						// Channel Statistics endpoint
-						endpoint = `/api/v1/channels/${encodeURIComponent(channelId)}/stats`;
-						method = 'GET';
-						const statsOptions = this.getNodeParameter('statsOptions', itemIndex, {}) as {
-							refresh?: boolean;
-							insights?: boolean;
-						};
-						qs = {};
-						if (statsOptions.refresh) {
-							qs.refresh = 'true';
-						}
-						if (statsOptions.insights) {
-							qs.insights = 'true';
-						}
-					} else if (operation === 'getGrowth') {
-						// Channel Growth endpoint
-						endpoint = `/api/v1/channels/${encodeURIComponent(channelId)}/growth`;
-						method = 'GET';
-						const period = this.getNodeParameter('period', itemIndex, '30d') as string;
-						qs = { period };
-					} else {
-						// Original channel content endpoints (videos, shorts, playlists)
-						endpoint = '/api/v1/channels';
-						method = 'GET';
-						let contentType = 'videos';
-						if (operation === 'getShorts') contentType = 'shorts';
-						if (operation === 'getPlaylists') contentType = 'playlists';
-						qs = {
-							id: channelId,
-							content: contentType,
-						};
-						// Add continuation token if present
-						const additionalOptions = this.getNodeParameter('additionalOptions', itemIndex, {}) as {
-							continuationToken?: string;
-						};
-						if (additionalOptions.continuationToken) {
-							qs.continuationToken = additionalOptions.continuationToken;
-						}
-					}
-				} else if (resource === 'playlist') {
-					endpoint = '/api/v1/playlists';
-					method = 'GET';
-					qs = {
-						id: this.getNodeParameter('playlistId', itemIndex) as string,
-					};
+				const requestOptions: IHttpRequestOptions = {
+					method: request.method,
+					url: `${baseUrl}${request.endpoint}`,
+					headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+					json: true,
+					timeout,
+				};
+				const qs: IDataObject = {};
+				for (const [key, value] of Object.entries(request.qs)) {
+					if (value !== undefined && value !== null && value !== '') qs[key] = value;
+				}
+				if (Object.keys(qs).length > 0) requestOptions.qs = qs;
+				if (request.method === 'POST' && Object.keys(request.body).length > 0) {
+					requestOptions.body = request.body;
 				}
 
-				// Execute request with retry logic
-				let lastError: Error | undefined;
 				let response: unknown;
-
-				for (let attempt = 0; attempt <= maxRetries; attempt++) {
+				for (let attempt = 0; ; attempt++) {
 					try {
-						if (attempt > 0) {
-							const delay = getRetryDelay(attempt - 1);
-							const adjustedDelay = (delay / RETRY_CONFIG.initialDelayMs) * initialDelay;
-							this.logger.info(`Retry attempt ${attempt}/${maxRetries} after ${adjustedDelay}ms delay`);
-							await sleep(adjustedDelay);
-						}
-
-						// AI operations (summarize, chat, speakers, chapters) need longer timeout
-						const isAiOperation = ['summarize', 'chat', 'speakers', 'chapters'].includes(resource);
-						const timeout = isAiOperation ? 120000 : 30000; // 2 min for AI, 30s for others
-
-						const requestOptions: {
-							method: IHttpRequestMethods;
-							url: string;
-							headers: Record<string, string>;
-							qs?: Record<string, string | number | undefined>;
-							body?: Record<string, unknown>;
-							json: boolean;
-							timeout: number;
-						} = {
-							method,
-							url: `${baseUrl}${endpoint}`,
-							headers: {
-								Accept: 'application/json',
-								'Content-Type': 'application/json',
-							},
-							json: true,
-							timeout,
-						};
-
-						if (method === 'GET' && Object.keys(qs).length > 0) {
-							// Filter out undefined values
-							const filteredQs: Record<string, string | number> = {};
-							for (const [key, value] of Object.entries(qs)) {
-								if (value !== undefined && value !== '') {
-									filteredQs[key] = value;
-								}
-							}
-							requestOptions.qs = filteredQs;
-						}
-
-						if (method === 'POST' && Object.keys(body).length > 0) {
-							requestOptions.body = body;
-						}
-
 						response = await this.helpers.httpRequestWithAuthentication.call(
 							this,
 							'smartProfilingApi',
 							requestOptions,
 						);
-						// Success - break out of retry loop
 						break;
-					} catch (error: unknown) {
-						lastError = error as Error;
-						const err = error as { statusCode?: number; httpCode?: string; response?: { status?: number } };
-						const statusCode = err.statusCode ?? err.response?.status ?? (err.httpCode ? Number(err.httpCode) : undefined);
-
-						// Check if error is retryable
-						if (statusCode && RETRY_CONFIG.retryableStatusCodes.includes(statusCode)) {
-							if (attempt < maxRetries) {
-								this.logger.warn(
-									`Request failed with status ${statusCode}, will retry (attempt ${attempt + 1}/${maxRetries})`,
-								);
-								continue;
-							}
+					} catch (error) {
+						const statusCode = statusOf(error);
+						if (attempt < maxRetries && isRetryable(statusCode, request.billable)) {
+							const delay = retryDelayMs(attempt, initialDelay, retryAfterOf(error));
+							this.logger.warn(
+								`Request failed with status ${statusCode}, retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries})`,
+							);
+							await sleep(delay);
+							continue;
 						}
-
-						// Non-retryable error or max retries reached
 						throw new NodeApiError(this.getNode(), error as JsonObject, { itemIndex });
 					}
 				}
 
-				if (!response && lastError) {
-					throw new NodeApiError(this.getNode(), lastError as unknown as JsonObject, { itemIndex });
-				}
-
-				// Parse response if it's a string
 				let responseData: unknown = response;
 				if (typeof response === 'string') {
 					try {
@@ -365,6 +218,10 @@ export class SmartProfiling implements INodeType {
 						responseData = { data: response };
 					}
 				}
+				responseData = applyDisplayFormat(responseData, request.displayFormat);
+				if (responseData === null || typeof responseData !== 'object' || Array.isArray(responseData)) {
+					responseData = { data: responseData };
+				}
 
 				returnData.push({
 					json: responseData as IDataObject,
@@ -372,30 +229,21 @@ export class SmartProfiling implements INodeType {
 				});
 			} catch (error: unknown) {
 				if (this.continueOnFail()) {
-					const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-					const statusCode = (error as { statusCode?: number }).statusCode;
 					returnData.push({
 						json: {
-							error: errorMessage,
-							statusCode,
+							error: error instanceof Error ? error.message : 'Unknown error',
+							statusCode: statusOf(error),
 						},
 						pairedItem: { item: itemIndex },
 					});
 					continue;
 				}
 
-				if (error instanceof NodeOperationError) {
-					throw new NodeOperationError(this.getNode(), error, { itemIndex });
-				}
 				if (error instanceof NodeApiError) {
-					throw new NodeApiError(this.getNode(), error as unknown as JsonObject, { itemIndex });
+					error.context = { ...error.context, itemIndex };
+					throw new NodeApiError(this.getNode(), error as unknown as JsonObject);
 				}
-
-				const errorMessage = error instanceof Error ? error.message : 'Request failed';
-				throw new NodeApiError(this.getNode(), { message: errorMessage } as JsonObject, {
-					itemIndex,
-					message: errorMessage,
-				});
+				throw new NodeOperationError(this.getNode(), error as Error, { itemIndex });
 			}
 		}
 

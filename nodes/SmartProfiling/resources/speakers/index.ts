@@ -54,7 +54,7 @@ export const speakersDescription: INodeProperties[] = [
 				name: 'maxSpeakers',
 				type: 'number',
 				default: 5,
-				description: 'Maximum number of speakers to identify',
+				description: 'Maximum number of speakers to identify. The API does not apply this setting yet.',
 			},
 		],
 	},
