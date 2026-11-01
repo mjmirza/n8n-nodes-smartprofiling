@@ -116,7 +116,7 @@ export const summarizeDescription: INodeProperties[] = [
 				type: 'string',
 				default: '',
 				placeholder: 'en',
-				description: 'Language for the summary output (leave empty for same as video)',
+				description: 'Preferred transcript language code the summary is built from, such as en or de. Empty uses English. It does not translate the summary.',
 			},
 			{
 				displayName: 'Custom Prompt',

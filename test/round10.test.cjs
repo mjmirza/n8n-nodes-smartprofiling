@@ -6,7 +6,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { SmartProfiling } = require('../dist/nodes/SmartProfiling/SmartProfiling.node.js');
 const request = require('../dist/nodes/SmartProfiling/request.js');
-const { ctx } = require('./fake-n8n.cjs');
+const { ctx, http } = require('./fake-n8n.cjs');
+const apiError = (code) => http(code);
 
 const run = (c) => new SmartProfiling().execute.call(c);
 const ids = (n) => Array.from({ length: n }, (_, i) => `vid${String(i).padStart(8, '0')}`);
@@ -43,4 +44,38 @@ test('playlist Get Videos states that only the first page is read', () => {
 	assert.match(op.options.find((o) => o.value === 'getVideos').description, /first page/);
 	const limit = props.find((p) => p.name === 'limit');
 	assert.match(limit.hint, /first page/);
+});
+
+test('Continue On Fail keeps the per-video reasons of a fully failed bulk request', async () => {
+	const errors = [{ id: 'a', error: 'Video unavailable' }, { id: 'b', error: 'Timed out' }];
+	const c = ctx(
+		{ resource: 'transcript', operation: 'getBulk', videoIds: 'a\nb', format: 'json', language: 'en' },
+		{ success: true, data: { transcripts: [], errors }, meta: { requested: 2, successful: 0, failed: 2 } },
+		{ continueOnFail: true },
+	);
+	const out = await run(c);
+	const json = out[0][0].json;
+	assert.match(json.error, /None of the 2 transcripts/);
+	assert.deepEqual(json.data.errors, errors);
+	assert.equal(json.meta.failed, 2);
+});
+
+test('a single-item error under Continue On Fail carries no bulk data', async () => {
+	const c = ctx(
+		{ resource: 'chat', operation: 'send', videoId: 'abc', message: 'hi', retryOptions: { maxRetries: 0 } },
+		apiError(429),
+		{ continueOnFail: true },
+	);
+	const out = await run(c);
+	assert.equal(out[0][0].json.statusCode, 429);
+	assert.equal(out[0][0].json.data, undefined);
+	assert.equal(out[0][0].json.meta, undefined);
+});
+
+test('Summary Language describes the transcript language, not a translation', () => {
+	const props = new SmartProfiling().description.properties;
+	const lang = props.flatMap((p) => p.options ?? []).find((o) => o.name === 'language' && /summary|transcript/i.test(o.description ?? '') && /translate/i.test(o.description ?? ''));
+	assert.ok(lang, 'summary language option with corrected description');
+	assert.match(lang.description, /Empty uses English/);
+	assert.match(lang.description, /does not translate/);
 });

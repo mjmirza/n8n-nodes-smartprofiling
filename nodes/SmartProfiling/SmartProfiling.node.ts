@@ -170,6 +170,8 @@ export class SmartProfiling implements INodeType {
 		const timeout = isAiOperation ? 120000 : 30000;
 
 		for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
+			// Per-video results of a bulk request where nothing succeeded, kept for Continue On Fail.
+			let failedBulk: IDataObject | undefined;
 			try {
 				if (baseUrlError) throw new NodeOperationError(this.getNode(), baseUrlError.message, { itemIndex });
 				const operation = this.getNodeParameter('operation', itemIndex) as string;
@@ -292,6 +294,7 @@ export class SmartProfiling implements INodeType {
 				}
 				const meta = (responseData as IDataObject | null)?.meta as IDataObject | undefined;
 				if (request.method === 'POST' && request.endpoint === '/api/v1/transcripts' && meta?.successful === 0 && Number(meta.requested) > 0) {
+					failedBulk = { data: (responseData as IDataObject).data ?? {}, meta };
 					// A failed batch carries the real status, such as 402 or 429, so report that rather than a generic error.
 					if (bulkFailure !== undefined) throw new NodeApiError(this.getNode(), bulkFailure as JsonObject, { itemIndex });
 					throw new NodeOperationError(this.getNode(), `None of the ${meta.requested} transcripts could be retrieved`, {
@@ -314,6 +317,7 @@ export class SmartProfiling implements INodeType {
 						json: {
 							error: error instanceof Error ? error.message : 'Unknown error',
 							statusCode: statusOf(error),
+							...failedBulk,
 						},
 						pairedItem: { item: itemIndex },
 					});
