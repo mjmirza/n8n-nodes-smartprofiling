@@ -169,8 +169,8 @@ export const channelDescription: INodeProperties[] = [
 			{
 				displayName: 'Continuation Token',
 				name: 'continuationToken',
-				// eslint-disable-next-line n8n-nodes-base/node-param-type-options-password-missing -- pagination cursor, not a secret
 				type: 'string',
+				typeOptions: { password: true },
 				default: '',
 				placeholder: 'Paste continuationToken from previous response',
 				hint: 'Use this to fetch the next batch of results',

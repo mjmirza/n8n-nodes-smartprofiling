@@ -384,8 +384,11 @@ export class SmartProfiling implements INodeType {
 					continue;
 				}
 
-				if (error instanceof NodeApiError || error instanceof NodeOperationError) {
-					throw error;
+				if (error instanceof NodeOperationError) {
+					throw new NodeOperationError(this.getNode(), error, { itemIndex });
+				}
+				if (error instanceof NodeApiError) {
+					throw new NodeApiError(this.getNode(), error as unknown as JsonObject, { itemIndex });
 				}
 
 				const errorMessage = error instanceof Error ? error.message : 'Request failed';
